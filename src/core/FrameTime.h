@@ -15,24 +15,28 @@ public:
           m_accumulator(0.0),
           m_clock_prev(std::chrono::high_resolution_clock::now()) {}
 
-    // Updates the clock, returns true if we need to run a physics/logic step
-    bool tick() {
+    void update() {
         auto clock_now = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = clock_now - m_clock_prev;
         m_clock_prev = clock_now;
 
         double frame_time = elapsed.count();
         if (frame_time > 0.1) frame_time = 0.1; // Spiral of death guard
-        
+
         m_accumulator += frame_time;
+    }
+
+    bool tick() const {
         return m_accumulator >= m_time_step;
     }
 
-    // Consumes one step fraction from the accumulator pool
     void consume_step() {
         m_accumulator -= m_time_step;
     }
 
-    // Read-only access to our rigid target delta time
+    float get_alpha() const {
+        return static_cast<float>(m_accumulator / m_time_step);
+    }
+
     double fixed_delta() const { return m_time_step; }
 };

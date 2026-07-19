@@ -6,8 +6,49 @@
 #include "core/SceneManager.h"
 #include "MiniGameScene.h"
 
+// --- UPDATE --- where game logic updates happens
+void frame_updates(GameWindow& window, FrameTime& frame_time, SceneManager& scene_manager) {
+    frame_time.update();
+
+    while (frame_time.tick()) {
+        if (window.is_active()) {
+            // Early out on Escape key if allowed
+            if (Game::QUIT_ON_ESC && Input::is_key_pressed(MFB_KB_KEY_ESCAPE)) {
+                window.close();
+                break;
+            }
+
+            // Actual game logic updates
+            scene_manager.update(frame_time.fixed_delta());
+        } else {
+            // Safe stall if window loses focus
+            Input::force_clear_all_inputs();
+        }
+
+        Input::update_input_state();
+        frame_time.consume_step();
+    }
+}
+
+// --- DRAW --- where drawing happens
+void draw(GameWindow& window, FrameTime& frame_time, SceneManager& scene_manager, std::vector<uint32_t>& pixel_buffer) {
+    float alpha = frame_time.get_alpha();
+
+    // TODO: we'll use alpha in the draw methods later
+    // Use alpha to smoothly slide/interpolate visual coordinates
+    // to exactly where they should be at this exact microsecond
+    // scene_manager.draw(pixel_buffer, alpha);
+    scene_manager.draw(pixel_buffer);
+
+    // TODO: to be impl later doing draw commands, z-index, y sorting, etc
+    // Game::flush_draw_pipeline(pixel_buffer);
+
+    window.present(pixel_buffer);
+}
+
+// --- MAIN --- init window, frame timing management, pixel buffer, scene manager
+// game loop - poll events, updates, draw
 int main() {
-    // Initialize window and frame time management
     GameWindow game_window(Game::TITLE.data(), Game::WIDTH, Game::HEIGHT);
     FrameTime frame_time(Game::TARGET_FPS);
 
@@ -18,48 +59,18 @@ int main() {
     // Pixel buffer for drawing
     std::vector<uint32_t> pixel_buffer(Game::WIDTH * Game::HEIGHT, 0x00000000);
 
-    SceneManager sceneManager;
+    SceneManager scene_manager;
 
     // Initialize and change to the first scene
-    sceneManager.changeScene(std::make_unique<MiniGameScene>());
+    scene_manager.changeScene(std::make_unique<MiniGameScene>());
 
     while (game_window.is_running()) {
         game_window.poll_events();
 
-        // Track if a logic frame actually executed this loop iteration
-        bool simulated_this_frame = false;
+        frame_updates(game_window, frame_time, scene_manager);
 
-        // High-Precision Fixed Logic Loop
-        while (frame_time.tick()) {
-            if (game_window.is_active()) {
-                // --- UPDATE ---
-                // NOTE: remove this in a true released game so ESC doesn't quit so easily
-                if (Game::QUIT_ON_ESC && Input::is_key_pressed(MFB_KB_KEY_ESCAPE)) {
-                    game_window.close();
-                    break;
-                }
-
-                // scene update --- this is where your actual game logic happens
-                sceneManager.update(frame_time.fixed_delta());
-                // --- END UPDATE ---
-            } else {
-                // If the window is not active for any reason, safely stall player states
-                Input::force_clear_all_inputs();
-            }
-
-            Input::update_input_state();
-
-            frame_time.consume_step();
-            simulated_this_frame = true;
-        }
-
-        if (simulated_this_frame && game_window.is_running()) {
-            // --- DRAW ---
-            // draw (clearing pixels first at beginning of the scene)
-            sceneManager.draw(pixel_buffer);
-
-            game_window.present(pixel_buffer);
-            // --- END DRAW ---
+        if (game_window.is_running()) {
+            draw(game_window, frame_time, scene_manager, pixel_buffer);
         }
     }
 
