@@ -12,14 +12,14 @@
 void frame_updates(GameWindow& window, FrameTime& frame_time, SceneManager& scene_manager) {
     frame_time.update();
 
-    Input::update_input_state(window.raw());
+    bool did_tick = false;
 
     while (frame_time.tick()) {
-        // Input::update_input_state(window.raw());
+        did_tick = true;
 
         if (window.is_active()) {
             // Early out on Escape key if allowed
-            if (Game::QUIT_ON_ESC && Input::is_key_pressed(MFB_KB_KEY_ESCAPE)) {
+            if (Game::QUIT_ON_ESC && Input::is_key_just_pressed(MFB_KB_KEY_ESCAPE)) {
                 window.close();
                 break;
             }
@@ -32,6 +32,11 @@ void frame_updates(GameWindow& window, FrameTime& frame_time, SceneManager& scen
         }
 
         frame_time.consume_step();
+    }
+
+    // Only wipe out 'just pressed' inputs if we actually ran the game logic this frame!
+    if (did_tick) {
+        Input::clear_just_pressed();
     }
 }
 
@@ -70,6 +75,7 @@ int main() {
     scene_manager.changeScene(std::make_unique<MiniGameScene>());
 
     while (game_window.is_running()) {
+        Input::update_input_state(game_window.raw());
         game_window.poll_events();
 
         frame_updates(game_window, frame_time, scene_manager);

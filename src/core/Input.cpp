@@ -1,5 +1,4 @@
 #include "Input.h"
-#include "Log.h"
 #include <cstring>
 #include <MiniFB.h>
 #include <algorithm>
@@ -15,7 +14,9 @@ namespace Input {
             force_clear_all_inputs();
             return;
         }
+    }
 
+    void clear_just_pressed() {
         std::fill(std::begin(just_pressed_keys), std::end(just_pressed_keys), false);
     }
 
@@ -54,11 +55,6 @@ namespace Input {
 
     bool is_key_just_pressed(int key) {
         if (key < 0 || key >= MAX_KEYS) return false;
-
-        if (key == MFB_KB_KEY_SPACE && just_pressed_keys[key]) {
-            Log::fmt("[SPACE DEBUG] current: %d | just_pressed: %d",
-                     current_keys[key], just_pressed_keys[key]);
-        }
 
         return just_pressed_keys[key];
     }

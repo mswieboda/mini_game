@@ -11,6 +11,7 @@ namespace Input {
     void keyboard_callback(struct mfb_window *window, mfb_key key, mfb_key_mod mod, bool is_pressed);
     void window_active_callback(struct mfb_window *window, bool is_active);
     void force_clear_all_inputs();
+    void clear_just_pressed();
 
     bool is_key_pressed(int key);
     bool is_key_just_pressed(int key);
