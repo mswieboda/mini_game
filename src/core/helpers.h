@@ -34,26 +34,58 @@ inline void draw_rectangle(std::vector<uint32_t>& buf, int rx, int ry, int rw, i
     }
 }
 
-inline void draw_text(std::vector<uint32_t>& buf, int tx, int ty, const std::string& msg, uint32_t color) {
-    int cursor_x = tx;
-    for (char c : msg) {
-        // Use your new FONT_ORDER to find the index
-        const char* p = strchr(FONT_ORDER, toupper(c));
-        if (!p) continue;
-        int idx = (int)(p - FONT_ORDER);
+// using export from https://www.pentacom.jp/pentacom/bitfontmaker2/
+// which outputs weirdly right to left i think, mirrored,
+// so the `draw_text` has to account for that.
+// likely because it's a Japan website. good enough for basics for now
+inline void draw_text(std::vector<uint32_t>& buf, int tx, int ty, const std::string& msg, uint32_t color, int scale = 1) {
+    // Ensure scale is at least 1x
+    if (scale < 1) scale = 1;
 
-        for (int row = 0; row < 8; ++row) {
-            uint8_t font_row = MINI_FONT[idx][row];
-            int current_y = ty + row;
-            if (current_y < 0 || current_y >= Game::HEIGHT) continue;
-            for (int col = 0; col < 8; ++col) {
-                int current_x = cursor_x + col;
-                if (current_x < 0 || current_x >= Game::WIDTH) continue;
-                if ((font_row >> (7 - col)) & 0x1)
-                    buf[current_y * Game::WIDTH + current_x] = color;
+    int cursor_x = tx;
+    constexpr int total_chars = sizeof(Font::MINI) / sizeof(Font::MINI[0]);
+
+    for (char c : msg) {
+        if (c == ' ') {
+            // Scale the blank space gap proportionally
+            cursor_x += 8 * scale;
+            continue;
+        }
+
+        int idx = static_cast<unsigned char>(c) - 33;
+        if (idx < 0 || idx >= total_chars) continue;
+
+        // Loop over the base font rows
+        for (int row = 0; row < Font::SIZE; ++row) {
+            Font::RowType font_row = Font::MINI[idx][row];
+
+            // Calculate where this block of pixels starts vertically
+            int base_y = ty + (row * scale);
+
+            // Loop over the base font columns
+            for (int col = 0; col < Font::SIZE; ++col) {
+                // If the bit is active, paint a scaled block!
+                if ((font_row >> col) & 0x1) {
+                    int base_x = cursor_x + (col * scale);
+
+                    // Draw a 'scale x scale' square block of pixels on the screen
+                    for (int sy = 0; sy < scale; ++sy) {
+                        int current_y = base_y + sy;
+                        if (current_y < 0 || current_y >= Game::HEIGHT) continue;
+
+                        for (int sx = 0; sx < scale; ++sx) {
+                            int current_x = base_x + sx;
+                            if (current_x < 0 || current_x >= Game::WIDTH) continue;
+
+                            buf[current_y * Game::WIDTH + current_x] = color;
+                        }
+                    }
+                }
             }
         }
-        cursor_x += 8;
+
+        // Move the typewriter cursor forward by the character size multiplied by the scale factor
+        cursor_x += Font::SPACING * scale;
     }
 }
 

@@ -34,6 +34,9 @@ public:
     void draw(std::vector<uint32_t>& buffer) override {
         clear_screen(buffer, 0xFF131313);
         draw_text(buffer, 16, 16, "SCORE:  " + std::to_string(m_score), 0xFFFFFFFF);
+        draw_text(buffer, 16, 32, "ABCdefUVWxyz1234!\"#$%", 0xFFFFFFFF, 2);
+        draw_text(buffer, 16, 64, "&\'()*+,-./:;<=>", 0xFFFFFFFF, 3);
+        draw_text(buffer, 16, 128, "?@[\\]^_`{|}", 0xFFFFFFFF, 4);
 
         draw_sprite_rle(
             buffer,
