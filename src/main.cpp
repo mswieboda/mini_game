@@ -1,73 +1,54 @@
-#include <MiniFB.h>
 #include <vector>
+#include "Game.h"
+#include "core/Window.h"
+#include "core/FrameTime.h"
 #include "core/Input.h"
 #include "core/SceneManager.h"
-#include "Game.h"
 #include "MiniGameScene.h"
 
 int main() {
+    // Initialize window and frame time management
+    Window game_window(Game::TITLE.data(), Game::WIDTH, Game::HEIGHT);
+    FrameTime frame_time(Game::TARGET_FPS);
+
+    // Setup input routing
+    mfb_set_keyboard_callback(game_window.raw(), Input::keyboard_callback);
+
     // Pixel buffer for drawing
-    std::vector<uint32_t> pixel_buffer(Game::WIDTH * Game::HEIGHT, 0xFF000000);
-
-    // Create the MFB window
-    struct mfb_window* window = mfb_open_ex(
-        Game::TITLE.data(),
-        Game::WIDTH,
-        Game::HEIGHT,
-        MFB_WF_RESIZABLE
-    );
-
-    if (!window) return -1;
-
-    mfb_set_keyboard_callback(window, Input::keyboard_callback);
+    std::vector<uint32_t> pixel_buffer(Game::WIDTH * Game::HEIGHT, 0x00000000);
 
     SceneManager sceneManager;
 
-    // Initialize the first scene
+    // Initialize and change to the first scene
     sceneManager.changeScene(std::make_unique<MiniGameScene>());
 
-    bool running = true;
-    FrameTimer timer;
-    FrameLimiter fps_limiter(Game::TARGET_FPS);
+    while (game_window.is_running()) {
+        game_window.poll_events();
 
-    while (running) {
-        // set up input
-        Input::update_input_state();
+        // Track if a logic frame actually executed this loop iteration
+        bool simulated_this_frame = false;
 
-        // get events
-        mfb_update_state state = mfb_update_events(window);
+        // Step 2: High-Precision Fixed Logic Loop
+        while (frame_time.tick()) {
+            // NOTE: remove this in a true released game so ESC doesn't quit so easily
+            if (Game::QUIT_ON_ESC && Input::is_key_pressed(MFB_KB_KEY_ESCAPE)) {
+                game_window.close();
+                break;
+            }
 
-        if (state < 0) {
-            running = false;
-            break;
+            // scene update --- this is where your actual game logic happens
+            sceneManager.update(frame_time.fixed_delta());
+
+            frame_time.consume_step();
+            simulated_this_frame = true;
         }
 
-        // NOTE: remove this in a true released game so ESC doesn't quit so easily
-        if (Game::QUIT_ON_ESC && Input::is_key_pressed(MFB_KB_KEY_ESCAPE)) {
-            running = false;
-            break;
+        if (simulated_this_frame && game_window.is_running()) {
+            // draw (clearing pixels first at beginning of the scene)
+            sceneManager.draw(pixel_buffer);
+
+            game_window.present(pixel_buffer);
         }
-
-        // main scene manager update and draw
-        float dt = timer.delta();
-
-        // update
-        sceneManager.update(window, dt);
-
-        // draw
-        sceneManager.draw(pixel_buffer);
-
-        // persist draw, "present" in most engines
-        state = mfb_update_ex(window, pixel_buffer.data(), Game::WIDTH, Game::HEIGHT);
-
-        if (state < 0) {
-            running = false;
-        }
-
-        // FPS frame limiter
-        // if (running) {
-        //     fps_limiter.wait(dt);
-        // }
     }
 
     return 0;

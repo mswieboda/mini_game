@@ -11,6 +11,6 @@ public:
     
     // Core Lifecycle Hooks
     virtual void init(SceneManager& sm) = 0;
-    virtual void update(struct mfb_window* window, SceneManager& sm, float dt) = 0;
+    virtual void update(SceneManager& sm, float dt) = 0;
     virtual void draw(std::vector<uint32_t>& buffer) = 0;
 };

@@ -16,7 +16,7 @@ public:
         m_score = 0;
     }
 
-    void update(struct mfb_window* window, SceneManager& sm, float dt) override {
+    void update(SceneManager& sm, float dt) override {
         float speed = 100.0f * dt;
 
         if (Input::is_key_pressed(MFB_KB_KEY_LEFT) || Input::is_key_pressed(MFB_KB_KEY_A)) m_playerX -= speed;
@@ -32,7 +32,7 @@ public:
     }
 
     void draw(std::vector<uint32_t>& buffer) override {
-        clear_screen(buffer, 0xFF18181A);
+        clear_screen(buffer, 0xFF131313);
         draw_text(buffer, 16, 16, "SCORE:  " + std::to_string(m_score), 0xFFFFFFFF);
 
         draw_sprite_rle(

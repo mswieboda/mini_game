@@ -17,10 +17,6 @@ namespace Input {
         }
     }
 
-    void update_input_state() {
-        // memcpy(previous_keys, current_keys, sizeof(current_keys));
-    }
-
     bool is_key_pressed(int key) {
         if (key < 0 || key >= MAX_KEYS) return false;
 

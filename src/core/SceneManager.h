@@ -21,10 +21,10 @@ public:
         m_nextScene = std::move(newScene);
     }
 
-    void update(struct mfb_window* window, float dt) {
+    void update(float dt) {
         processPendingChanges();
 
-        if (m_currentScene) m_currentScene->update(window, *this, dt);
+        if (m_currentScene) m_currentScene->update(*this, dt);
     }
 
     void draw(std::vector<uint32_t>& buffer) {

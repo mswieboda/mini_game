@@ -6,7 +6,7 @@ namespace Game {
     inline constexpr int HEIGHT = 480;
     inline constexpr std::string_view TITLE = "Mini Game";
 
-    inline constexpr int TARGET_FPS = 60; // Set your cap here
+    inline constexpr int TARGET_FPS = 30; // Set your cap here
     inline constexpr float FRAME_DURATION = 1.0f / TARGET_FPS;
 
     // NOTE: disable this in a true released game so ESC doesn't quit so easily
