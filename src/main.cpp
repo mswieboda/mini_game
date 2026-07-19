@@ -6,11 +6,17 @@
 #include "core/SceneManager.h"
 #include "MiniGameScene.h"
 
+#include <iostream> // TODO: remove when removing `cout`
+
 // --- UPDATE --- where game logic updates happens
 void frame_updates(GameWindow& window, FrameTime& frame_time, SceneManager& scene_manager) {
     frame_time.update();
 
+    Input::update_input_state(window.raw());
+
     while (frame_time.tick()) {
+        // Input::update_input_state(window.raw());
+
         if (window.is_active()) {
             // Early out on Escape key if allowed
             if (Game::QUIT_ON_ESC && Input::is_key_pressed(MFB_KB_KEY_ESCAPE)) {
@@ -25,7 +31,6 @@ void frame_updates(GameWindow& window, FrameTime& frame_time, SceneManager& scen
             Input::force_clear_all_inputs();
         }
 
-        Input::update_input_state();
         frame_time.consume_step();
     }
 }
