@@ -13,6 +13,7 @@ int main() {
 
     // Setup input routing
     mfb_set_keyboard_callback(game_window.raw(), Input::keyboard_callback);
+    mfb_set_active_callback(game_window.raw(), Input::window_active_callback);
 
     // Pixel buffer for drawing
     std::vector<uint32_t> pixel_buffer(Game::WIDTH * Game::HEIGHT, 0x00000000);
@@ -30,14 +31,21 @@ int main() {
 
         // High-Precision Fixed Logic Loop
         while (frame_time.tick()) {
-            // NOTE: remove this in a true released game so ESC doesn't quit so easily
-            if (Game::QUIT_ON_ESC && Input::is_key_pressed(MFB_KB_KEY_ESCAPE)) {
-                game_window.close();
-                break;
-            }
+            if (game_window.is_active()) {
+                // --- UPDATE ---
+                // NOTE: remove this in a true released game so ESC doesn't quit so easily
+                if (Game::QUIT_ON_ESC && Input::is_key_pressed(MFB_KB_KEY_ESCAPE)) {
+                    game_window.close();
+                    break;
+                }
 
-            // scene update --- this is where your actual game logic happens
-            sceneManager.update(frame_time.fixed_delta());
+                // scene update --- this is where your actual game logic happens
+                sceneManager.update(frame_time.fixed_delta());
+                // --- END UPDATE ---
+            } else {
+                // If the window is not active for any reason, safely stall player states
+                Input::force_clear_all_inputs();
+            }
 
             Input::update_input_state();
 
@@ -46,10 +54,12 @@ int main() {
         }
 
         if (simulated_this_frame && game_window.is_running()) {
+            // --- DRAW ---
             // draw (clearing pixels first at beginning of the scene)
             sceneManager.draw(pixel_buffer);
 
             game_window.present(pixel_buffer);
+            // --- END DRAW ---
         }
     }
 

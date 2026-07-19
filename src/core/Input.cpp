@@ -20,6 +20,20 @@ namespace Input {
         }
     }
 
+    void window_active_callback(struct mfb_window *window, bool is_active) {
+        if (!is_active) {
+            // Window lost focus! Wipe out any lingering keys so they don't get stuck "on"
+            force_clear_all_inputs();
+        }
+    }
+
+    void force_clear_all_inputs() {
+        for (int i = 0; i < MAX_KEYS; ++i) {
+            current_keys[i] = false;
+            previous_keys[i] = false;
+        }
+    }
+
     bool is_key_pressed(int key) {
         if (key < 0 || key >= MAX_KEYS) return false;
 

@@ -29,6 +29,10 @@ public:
     bool is_running() const { return m_running; }
     void close() { m_running = false; }
 
+    bool is_active() {
+        return mfb_is_window_active(m_window);
+    }
+
     // One-liner event poll that internally flips m_running if the user hits the [X] button
     void poll_events() {
         if (!m_running) return;
