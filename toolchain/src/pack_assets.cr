@@ -17,7 +17,10 @@ Dir.mkdir(BUILD_DIR) unless Dir.exists?(BUILD_DIR)
 def generate_sprite_rle_data(aseprite_path : String, sprite_path : String)
   raw_data_file = File.join(BUILD_DIR, "temp_#{Random.rand(10000)}.bin")
   palette_file = File.join(BUILD_DIR, "temp_#{Random.rand(10000)}.txt")
-  sprite_name = File.basename(sprite_path, File.extname(sprite_path)).upcase
+  sprite_name = File.basename(sprite_path, File.extname(sprite_path))
+    .upcase
+    # Sanitizes hyphens, spaces, and any other non-alphanumeric characters into clean underscores
+    .gsub(/[^A-Z0-9_]/, "_")
 
   lua_script_path = "src/export_sprite.lua"
   err_stream = IO::Memory.new
