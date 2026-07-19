@@ -2,8 +2,9 @@
 #include <MiniFB.h>
 #include <vector>
 #include <cstdint>
+#include "Input.h"
 
-class Window {
+class GameWindow {
 private:
     struct mfb_window* m_window;
     unsigned int m_width;
@@ -11,13 +12,13 @@ private:
     bool m_running;
 
 public:
-    Window(const char* title, unsigned int width, unsigned int height)
+    GameWindow(const char* title, unsigned int width, unsigned int height)
         : m_width(width), m_height(height), m_running(true) {
         m_window = mfb_open_ex(title, width, height, MFB_WF_RESIZABLE);
         if (!m_window) m_running = false;
     }
 
-    ~Window() {
+    ~GameWindow() {
         if (m_window) mfb_close(m_window);
     }
 
@@ -31,6 +32,7 @@ public:
     // One-liner event poll that internally flips m_running if the user hits the [X] button
     void poll_events() {
         if (!m_running) return;
+
         if (mfb_update_events(m_window) < 0) m_running = false;
     }
 

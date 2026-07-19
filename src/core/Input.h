@@ -1,3 +1,4 @@
+#pragma once
 #include <MiniFB.h>
 
 namespace Input {
@@ -6,6 +7,7 @@ namespace Input {
     extern bool current_keys[MAX_KEYS];
     extern bool previous_keys[MAX_KEYS];
 
+    void update_input_state();
     void keyboard_callback(struct mfb_window *window, mfb_key key, mfb_key_mod mod, bool is_pressed);
 
     bool is_key_pressed(int key);
