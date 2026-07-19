@@ -53,3 +53,6 @@ run-release:
 
 clean-release:
 	@$(MAKE) clean BUILD=Release
+
+release:
+	@$(MAKE) clean BUILD=Release assets build-release run-release

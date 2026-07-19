@@ -85,8 +85,7 @@ const uint8_t SPRITE_PLAYER[2] = {
 
 If you maintain this format, your software game loop will build flawlessly using the generic workspace `make build` and `make run` pipeline controls, regardless of where or how you built the hex sequences!
 
-## Usage
-
+## Build & Run Usage
 
 Build and run via `make` and `Makefile`:
 
@@ -122,8 +121,35 @@ make
 
 for short
 
+there are also `release` modes for the optimized compile:
 
-(Probably will change in the future to include debug/release modes, and `make` to just build & run debug mode.)
+```bash
+make build-release
+```
+
+```bash
+make run-release
+```
+
+and
+
+```bash
+make clean-release
+```
+
+and finally this is an alias/shortcut for clean & build & run for `release` mode:
+
+```bash
+make release
+```
+
+### Output Location
+
+Debug builds will output in `build/Debug` and release in `build/Release`
+
+Executable is in `build/{BUILD_MODE}/{GAME_NAME}`
+
+All you need to do is copy the binary at `build/mini_game` or `build/{game_name}` and zip it etc if desired.
 
 ## Contributing
 
