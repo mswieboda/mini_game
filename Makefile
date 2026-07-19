@@ -20,7 +20,7 @@ $(ASSETS_HEADER): $(ASSET_SRCS) $(ASSETS_SCRIPT_SRC)
 	@echo "--- Asset updates detected! Re-running packer pipeline ---"
 	cd toolchain && crystal run src/pack_assets.cr
 
-assets:
+assets: $(ASSETS_HEADER)
 	@echo "--- Packing Assets via Aseprite ---"
 	cd toolchain && crystal run src/pack_assets.cr
 
@@ -40,7 +40,7 @@ run:
 clean:
 	@echo "--- Cleaning [$(BUILD)] Workspace ---"
 	rm -rf build/$(BUILD)
-	rm -rf toolchain/bin
+	rm -rf toolchain/build/*
 	rm -f src/assets.h
 
 

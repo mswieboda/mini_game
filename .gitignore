@@ -2,3 +2,6 @@
 /lib/
 /bin/
 /build/
+
+# Ignore the generated C++ asset headers
+src/assets.h

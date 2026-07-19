@@ -7,19 +7,31 @@ require "random"
 ASEPRITE_CMD  = "aseprite"
 ASSETS_DIR    = "../assets"
 ASSETS_HEADER = "../src/assets.h"
+BUILD_DIR     = "build"
+
+# Ensure our asset and hidden build directories exist
+Dir.mkdir(ASSETS_DIR) unless Dir.exists?(ASSETS_DIR)
+Dir.mkdir(BUILD_DIR) unless Dir.exists?(BUILD_DIR)
 
 # Helper to process a single file and return its generated C++ code block strings
 def generate_sprite_rle_data(aseprite_path : String, sprite_path : String)
-  raw_data_file = "temp_#{Random.rand(10000)}.bin"
-  palette_file = "temp_#{Random.rand(10000)}.txt"
+  raw_data_file = File.join(BUILD_DIR, "temp_#{Random.rand(10000)}.bin")
+  palette_file = File.join(BUILD_DIR, "temp_#{Random.rand(10000)}.txt")
   sprite_name = File.basename(sprite_path, File.extname(sprite_path)).upcase
 
-  # 1. Headless Export
-  Process.run(aseprite_path, ["-b", sprite_path, "--save-as", raw_data_file])
-  Process.run(aseprite_path, ["-b", sprite_path, "--palette-format", "gpl", "--save-as", palette_file])
+  lua_script_path = "src/export_sprite.lua"
+  err_stream = IO::Memory.new
 
-  unless File.exists?(raw_data_file) && File.exists?(palette_file)
-    STDERR.puts "Error: Aseprite export failed for #{sprite_path}."
+  # Run Aseprite and inherit the streams so all logs/errors print directly to the terminal
+  res = Process.run(aseprite_path, [
+    "-b", sprite_path,
+    "--script-param", "filename=#{raw_data_file}",
+    "--script-param", "palette=#{palette_file}",
+    "--script", lua_script_path
+  ], output: Process::Redirect::Inherit, error: Process::Redirect::Inherit)
+
+  unless res.success? && File.exists?(raw_data_file) && File.exists?(palette_file)
+    STDERR.puts "\n❌ Error: Aseprite export pipeline broken for #{sprite_path}."
     exit(1)
   end
 
@@ -59,9 +71,10 @@ def generate_sprite_rle_data(aseprite_path : String, sprite_path : String)
     end
   end
 
-  # Clean files immediately
-  File.delete(raw_data_file)
-  File.delete(palette_file)
+
+  # If a crash happens before this point, the files stay in 'build/' for debugging!
+  File.delete(raw_data_file) if File.exists?(raw_data_file)
+  File.delete(palette_file) if File.exists?(palette_file)
 
   # Return structural data chunks back to main loop
   {
