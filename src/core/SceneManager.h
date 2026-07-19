@@ -1,17 +1,12 @@
 #pragma once
 #include <memory>
 #include "Scene.h"
+#include "Game.h"
 
 class SceneManager {
 private:
     std::unique_ptr<Scene> m_currentScene;
     std::unique_ptr<Scene> m_nextScene;
-
-public:
-    void changeScene(std::unique_ptr<Scene> newScene) {
-        // Queue the scene change to avoid deleting a scene mid-update loop
-        m_nextScene = std::move(newScene);
-    }
 
     void processPendingChanges() {
         if (m_nextScene) {
@@ -20,7 +15,15 @@ public:
         }
     }
 
+public:
+    void changeScene(std::unique_ptr<Scene> newScene) {
+        // Queue the scene change to avoid deleting a scene mid-update loop
+        m_nextScene = std::move(newScene);
+    }
+
     void update(struct mfb_window* window, float dt) {
+        processPendingChanges();
+
         if (m_currentScene) m_currentScene->update(window, *this, dt);
     }
 

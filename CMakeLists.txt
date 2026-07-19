@@ -38,10 +38,21 @@ include_directories(deps)
 include_directories(src)
 
 add_subdirectory(deps/minifb)
-add_executable(${GAME_BIN} src/main.cpp)
+
+file(GLOB_RECURSE SOURCES "src/*.cpp")
+add_executable(mini_game ${SOURCES})
+
 target_link_libraries(${GAME_BIN} PRIVATE minifb)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     find_package(X11 REQUIRED)
     target_link_libraries(${GAME_BIN} PRIVATE X11::X11 pthread GL)
+endif()
+
+# Only strip if we are building in Release mode
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_custom_command(TARGET ${GAME_BIN} POST_BUILD
+        COMMAND ${CMAKE_STRIP} -u -r $<TARGET_FILE:${GAME_BIN}>
+        COMMENT "Stripping debug symbols from the binary..."
+    )
 endif()
