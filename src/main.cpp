@@ -124,6 +124,14 @@ void draw_sprite_rle(std::vector<uint32_t>& buffer, int sx, int sy, int sprite_w
 }
 
 int main() {
+    std::cout << "--- ASSET DIAGNOSTIC LOG ---\n";
+    std::cout << "Compressed Sprite Size (bytes): " << SPRITE_GAME_PAD_COMPRESSED_SIZE << "\n";
+    std::cout << "First 4 Palette Colors Hex:\n";
+    for(int i = 0; i < 4; ++i) {
+        std::printf("  Color [%d]: 0x%08X\n", i, GLOBAL_PALETTE[i]);
+    }
+    std::cout << "----------------------------\n";
+
     // 1. Allocate the software rendering frame buffer
     std::vector<uint32_t> frame_buffer(WIDTH * HEIGHT, 0xFF000000);
 

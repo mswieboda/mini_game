@@ -1,4 +1,3 @@
--- toolchain/src/export_sprite.lua
 local sprite = app.activeSprite
 if not sprite then
     io.stderr:write("Error: No active sprite found.\n")
@@ -9,54 +8,57 @@ local target_filename = app.params["filename"]
 local palette_filename = app.params["palette"]
 
 if not target_filename or not palette_filename then
-    io.stderr:write("Error: Missing parameters. Requires both 'filename' and 'palette'.\n")
+    io.stderr:write("Error: Missing parameters.\n")
     os.exit(1)
 end
 
--- Safely search and define the first valid 'cel' containing an actual image block
-local cel = nil
-for _, c in ipairs(sprite.cels) do
-    if c.image then
-        cel = c
-        break
+-- 1. DRAW SPRITE TO A FRESH RGB IMAGE BUFFER
+-- This automatically flattens all visible layers into true RGBA values!
+local img = Image(sprite.width, sprite.height, ColorMode.RGB)
+img:drawSprite(sprite, 1) -- Draws frame 1 (1-based index in Lua)
+
+local pal = sprite.palettes[1]
+
+-- Cache the palette colors in Lua to look up indices instantly by true color matching
+local color_to_index = {}
+if pal then
+    for i = 0, #pal - 1 do
+        local c = pal:getColor(i)
+        -- Create a unique color key string "R,G,B,A"
+        local key = string.format("%d,%d,%d,%d", c.red, c.green, c.blue, c.alpha)
+        if color_to_index[key] == nil then
+            color_to_index[key] = i
+        end
     end
 end
 
-if not cel then
-    io.stderr:write("Error: No valid image cell data found in this sprite file.\n")
-    os.exit(1)
-end
-
--- 1. EXPORT RAW PIXEL DATA
+-- 2. EXPORT RAW PIXEL DATA
 local file = io.open(target_filename, "wb")
 if not file then
-    io.stderr:write("Error: Could not open output file: " .. target_filename .. "\n")
+    io.stderr:write("Error: Could not open output file.\n")
     os.exit(1)
 end
 
-local img = cel.image
 for y = 0, sprite.height - 1 do
     for x = 0, sprite.width - 1 do
         local color_byte = 0
 
-        -- Safe check: Is our coordinate inside the drawn bounding box of the cel?
-        if x >= cel.position.x and x < cel.position.x + img.width and
-           y >= cel.position.y and y < cel.position.y + img.height then
+        if x < img.width and y < img.height then
+            local raw_pixel = img:getPixel(x, y)
 
-            local raw_pixel = img:getPixel(x - cel.position.x, y - cel.position.y)
+            -- Extract true RGBA components from the pure RGB image buffer
+            local r = app.pixelColor.rgbaR(raw_pixel)
+            local g = app.pixelColor.rgbaG(raw_pixel)
+            local b = app.pixelColor.rgbaB(raw_pixel)
+            local a = app.pixelColor.rgbaA(raw_pixel)
 
-            -- Downcast Aseprite's internal 32-bit color integer safely down to a single byte (0-255)
-            if sprite.colorMode == ColorMode.INDEXED then
-                color_byte = app.pixelColor.indexedI(raw_pixel)
+            -- If pixel is fully transparent, treat it as color index 0
+            if a == 0 then
+                color_byte = 0
             else
-                -- Fallback for standard RGB images: Extract the Red channel value (0-255)
-                color_byte = app.pixelColor.rgbaR(raw_pixel)
+                local key = string.format("%d,%d,%d,%d", r, g, b, a)
+                color_byte = color_to_index[key] or 0
             end
-        end
-
-        -- Double guard to ensure the byte is strictly bounded to 0-255 before passing to string.char
-        if color_byte < 0 or color_byte > 255 then
-            color_byte = 0
         end
 
         file:write(string.char(color_byte))
@@ -64,18 +66,14 @@ for y = 0, sprite.height - 1 do
 end
 file:close()
 
--- 2. EXPORT RAW PALETTE TEXT
+-- 3. EXPORT RAW PALETTE TEXT
 local pal_file = io.open(palette_filename, "w")
-if not pal_file then
-    io.stderr:write("Error: Could not open palette file: " .. palette_filename .. "\n")
-    os.exit(1)
-end
-
-local pal = sprite.palettes[1]
-if pal then
-    for i = 0, #pal - 1 do
-        local color = pal:getColor(i)
-        pal_file:write(string.format("%d %d %d\n", color.red, color.green, color.blue))
+if pal_file then
+    if pal then
+        for i = 0, #pal - 1 do
+            local color = pal:getColor(i)
+            pal_file:write(string.format("%d %d %d\n", color.red, color.green, color.blue))
+        end
     end
+    pal_file:close()
 end
-pal_file:close()

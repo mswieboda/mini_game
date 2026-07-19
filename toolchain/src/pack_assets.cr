@@ -70,7 +70,9 @@ def generate_sprite_rle_data(aseprite_path : String, sprite_path : String)
     next unless line.split.first?.try &.to_i?
     parts = line.split
     if parts.size >= 3
-      colors << "0x%02X%02X%02XFF" % {parts[0].to_i, parts[1].to_i, parts[2].to_i}
+      # FIX: Change from "0x%02X%02X%02XFF" to "0xFF%02X%02X%02X"
+      # This places Alpha (0xFF) at the high end, matching MiniFB's ARGB standard expectations!
+      colors << "0xFF%02X%02X%02X" % {parts[0].to_i, parts[1].to_i, parts[2].to_i}
     end
   end
 
