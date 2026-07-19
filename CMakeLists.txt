@@ -39,7 +39,7 @@ include_directories(src)
 
 add_subdirectory(deps/minifb)
 
-file(GLOB_RECURSE SOURCES "src/*.cpp")
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 add_executable(mini_game ${SOURCES})
 
 target_link_libraries(${GAME_BIN} PRIVATE minifb)

@@ -1,0 +1,47 @@
+#pragma once
+#include <vector>
+#include <string>
+#include <variant>
+#include <cstdint>
+
+namespace Draw {
+
+    // --- 1. DATA PAYLOADS ---
+    struct TextData {
+        std::string text;
+        uint32_t color;
+        int scale;
+    };
+
+    struct RectData {
+        int width;
+        int height;
+        uint32_t color;
+        bool fill;
+    };
+
+    struct SpriteData {
+        const uint8_t* pixel_data;
+        uint16_t pixel_data_size;
+        int width;
+        int height;
+    };
+
+    // --- 2. UNIFIED PACKET ---
+    struct Command {
+        int x;
+        int y;
+        int z_index;
+        std::variant<TextData, RectData, SpriteData> data;
+    };
+
+    // --- 3. PUBLIC PIPELINE INTERFACE ---
+    
+    // Submit actions to the frame queue
+    void text(int x, int y, const std::string& text, uint32_t color, int scale = 1, int z_index = 1);
+    void rect(int x, int y, int width, int height, uint32_t color, bool fill = true, int z_index = 1);
+    void sprite(int x, int y, const uint8_t* pixel_data, uint16_t pixel_data_size, int width, int height, int z_index = 1);
+
+    // Process, order, and draw everything to the screen buffer
+    void flush_pipeline(std::vector<uint32_t>& buffer, uint32_t background_color);
+}

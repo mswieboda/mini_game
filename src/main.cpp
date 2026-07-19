@@ -40,8 +40,8 @@ void draw(GameWindow& window, FrameTime& frame_time, SceneManager& scene_manager
     // scene_manager.draw(pixel_buffer, alpha);
     scene_manager.draw(pixel_buffer);
 
-    // TODO: to be impl later doing draw commands, z-index, y sorting, etc
-    // Game::flush_draw_pipeline(pixel_buffer);
+    // Sort, draw everything, and clear the queue cache automatically
+    Draw::flush_pipeline(pixel_buffer, 0x00131313);
 
     window.present(pixel_buffer);
 }

@@ -96,7 +96,7 @@ inline void draw_sprite_rle(std::vector<uint32_t>& buf, int sx, int sy, int sw, 
         for (uint8_t i = 0; i < run; ++i) {
             int lx = px_idx % sw, ly = px_idx / sw; px_idx++;
             int tx = sx + lx, ty = sy + ly;
-            if (tx >= 0 && tx < Game::WIDTH && ty >= 0 && ty < Game::HEIGHT) {
+            if (tx >= 0 && tx < Game::WIDTH && ty >= 0 && ty < Game::HEIGHT && ly < sh) {
                 uint32_t color = GLOBAL_PALETTE[pal_idx];
                 if ((color & 0xFF000000) != 0x00000000) buf[ty * Game::WIDTH + tx] = color;
             }

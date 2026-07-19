@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include "core/Draw.h"
 #include "core/helpers.h"
 
 class MiniGameScene : public Scene {
@@ -32,20 +33,18 @@ public:
     }
 
     void draw(std::vector<uint32_t>& buffer) override {
-        clear_screen(buffer, 0xFF131313);
-        draw_text(buffer, 16, 16, "SCORE:  " + std::to_string(m_score), 0xFFFFFFFF);
-        draw_text(buffer, 16, 32, "ABCdefUVWxyz1234!\"#$%", 0xFFFFFFFF, 2);
-        draw_text(buffer, 16, 64, "&\'()*+,-./:;<=>", 0xFFFFFFFF, 3);
-        draw_text(buffer, 16, 128, "?@[\\]^_`{|}", 0xFFFFFFFF, 4);
+        Draw::text(16, 16, "SCORE:  " + std::to_string(m_score), 0xFFFFFFFF);
+        Draw::text(16, 32, "ABCdefUVWxyz1234!\"#$%", 0xFFFFFFFF, 2 /* scale */);
+        Draw::text(16, 64, "&\'()*+,-./:;<=>", 0xFFFFFFFF, 3 /* scale */);
+        Draw::text(16, 128, "?@[\\]^_`{|}", 0xFFFFFFFF, 4 /* scale */);
 
-        draw_sprite_rle(
-            buffer,
+        Draw::sprite(
             static_cast<int>(m_playerX),
             static_cast<int>(m_playerY),
-            128,
-            64,
-            SPRITE_GAME_PAD,
-            SPRITE_GAME_PAD_COMPRESSED_SIZE
+            SPRITE_GAME_PAD, // pixels
+            SPRITE_GAME_PAD_COMPRESSED_SIZE, // pixels size
+            128, // width
+            64 // height
         );
     }
 };
