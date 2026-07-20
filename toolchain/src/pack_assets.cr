@@ -118,7 +118,7 @@ File.open(ASSETS_HEADER, "w") do |file|
   # Use the palette from the first processed file as the unified global color space
   global_palette = processed_sprites.first[:palette]
   while global_palette.size < 256
-    global_palette << "0x000000FF"
+    global_palette << "0x00FF00FF"
   end
 
   file.puts "const uint32_t GLOBAL_PALETTE[256] = {"

@@ -52,9 +52,10 @@ for y = 0, sprite.height - 1 do
             local b = app.pixelColor.rgbaB(raw_pixel)
             local a = app.pixelColor.rgbaA(raw_pixel)
 
-            -- If pixel is fully transparent, treat it as color index 0
+            -- If pixel is fully transparent, treat it as color index 255
+            -- (which defaults to 0x00FF00FF / Magenta transparent in our engine)
             if a == 0 then
-                color_byte = 0
+                color_byte = 255
             else
                 local key = string.format("%d,%d,%d,%d", r, g, b, a)
                 color_byte = color_to_index[key] or 0
