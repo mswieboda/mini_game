@@ -15,6 +15,8 @@ public:
         m_playerX = Game::WIDTH / 2 - 128 / 2;
         m_playerY = Game::HEIGHT - 64 - 16;
         m_score = 0;
+
+        Draw::set_y_sort_mode(Draw::YSortMode::YPlusHeight);
     }
 
     void update(SceneManager& sm, float dt) override {

@@ -36,6 +36,14 @@ namespace Draw {
     };
 
     // --- 3. PUBLIC PIPELINE INTERFACE ---
+    enum class YSortMode {
+        None,
+        TopY,
+        YPlusHeight
+    };
+
+    void set_y_sort_mode(YSortMode mode);
+    YSortMode get_y_sort_mode();
     
     // Submit actions to the frame queue
     void text(int x, int y, const std::string& text, uint32_t color, int scale = 1, int z_index = 1);

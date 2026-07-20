@@ -8,6 +8,25 @@ namespace Draw {
     // NOTE: these are private, and invisible to public consumers
     namespace {
         std::vector<Command> g_queue;
+        YSortMode g_y_sort_mode = YSortMode::TopY;
+
+        int get_sort_y(const Command& cmd, YSortMode mode) {
+            if (mode == YSortMode::None) return 0;
+            if (mode == YSortMode::TopY) return cmd.y;
+            
+            // YPlusHeight
+            return cmd.y + std::visit([](auto&& arg) -> int {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, TextData>) {
+                    return Font::SIZE * arg.scale;
+                } else if constexpr (std::is_same_v<T, RectData>) {
+                    return arg.height;
+                } else if constexpr (std::is_same_v<T, SpriteData>) {
+                    return arg.height;
+                }
+                return 0;
+            }, cmd.data);
+        }
 
         void clear_screen(std::vector<uint32_t>& buf, uint32_t color) {
             std::fill(buf.begin(), buf.end(), color);
@@ -93,6 +112,14 @@ namespace Draw {
         }
     }
 
+    void set_y_sort_mode(YSortMode mode) {
+        g_y_sort_mode = mode;
+    }
+
+    YSortMode get_y_sort_mode() {
+        return g_y_sort_mode;
+    }
+
     void text(int x, int y, const std::string& text, uint32_t color, int scale, int z_index) {
         g_queue.push_back({ x, y, z_index, TextData{ text, color, scale } });
     }
@@ -115,7 +142,10 @@ namespace Draw {
             if (a.z_index != b.z_index) {
                 return a.z_index < b.z_index;
             }
-            return a.y < b.y;
+            if (g_y_sort_mode == YSortMode::None) {
+                return false; // Keep stable submission order
+            }
+            return get_sort_y(a, g_y_sort_mode) < get_sort_y(b, g_y_sort_mode);
         });
 
         // Dispatch drawing functions using pattern matching
