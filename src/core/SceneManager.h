@@ -2,32 +2,39 @@
 #include <memory>
 #include "Scene.h"
 #include "Game.h"
+#include "Log.h"
 
 class SceneManager {
 private:
-    std::unique_ptr<Scene> m_currentScene;
-    std::unique_ptr<Scene> m_nextScene;
+    std::unique_ptr<Scene> m_current_scene;
+    std::unique_ptr<Scene> m_next_scene;
 
     void processPendingChanges() {
-        if (m_nextScene) {
-            m_currentScene = std::move(m_nextScene);
-            m_currentScene->init(*this);
+        if (m_next_scene) {
+            m_current_scene = std::move(m_next_scene);
+            m_current_scene->init(*this);
         }
     }
 
 public:
-    void changeScene(std::unique_ptr<Scene> newScene) {
+    void change_scene(std::unique_ptr<Scene> new_scene) {
         // Queue the scene change to avoid deleting a scene mid-update loop
-        m_nextScene = std::move(newScene);
+        m_next_scene = std::move(new_scene);
     }
 
     void update(float dt) {
         processPendingChanges();
 
-        if (m_currentScene) m_currentScene->update(*this, dt);
+        if (m_current_scene) m_current_scene->update(*this, dt);
     }
 
-    void draw(std::vector<uint32_t>& buffer) {
-        if (m_currentScene) m_currentScene->draw(buffer);
+    void draw(std::vector<uint32_t>& pixel_buffer) {
+        if (m_current_scene) {
+            m_current_scene->draw(pixel_buffer);
+
+            Draw::flush_pipeline(pixel_buffer, m_current_scene->background_color);
+        } else {
+            Draw::flush_pipeline(pixel_buffer, 0xFF000000);
+        }
     }
 };

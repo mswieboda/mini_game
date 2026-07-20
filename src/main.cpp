@@ -48,10 +48,11 @@ void draw(GameWindow& window, FrameTime& frame_time, SceneManager& scene_manager
     // Use alpha to smoothly slide/interpolate visual coordinates
     // to exactly where they should be at this exact microsecond
     // scene_manager.draw(pixel_buffer, alpha);
-    scene_manager.draw(pixel_buffer);
 
-    // Sort, draw everything, and clear the queue cache automatically
-    Draw::flush_pipeline(pixel_buffer, 0x00131313);
+    // SceneManager::draw internally calls Draw::flush_pipeline with the scene's background_color.
+    // Do NOT call flush_pipeline again here — a second call would clear the buffer
+    // with an empty queue, erasing everything that was just drawn.
+    scene_manager.draw(pixel_buffer);
 
     window.present(pixel_buffer);
 }
@@ -72,7 +73,7 @@ int main() {
     SceneManager scene_manager;
 
     // Initialize and change to the first scene
-    scene_manager.changeScene(std::make_unique<MiniGameScene>());
+    scene_manager.change_scene(std::make_unique<MiniGameScene>());
 
     while (game_window.is_running()) {
         Input::update_input_state(game_window.raw());
