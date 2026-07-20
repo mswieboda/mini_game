@@ -3,6 +3,9 @@
 #include <vector>
 #include "core/Draw.h"
 #include "core/helpers.h"
+#include "core/Scene.h"
+#include "core/Input.h"
+#include "assets.h"
 
 class MiniGameScene : public Scene {
 private:

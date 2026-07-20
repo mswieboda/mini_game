@@ -3,6 +3,7 @@
 #include "Draw.h"
 #include "Font.h"
 #include "assets.h"
+#include "helpers.h"
 
 namespace Draw {
     // NOTE: these are private, and invisible to public consumers
@@ -43,6 +44,11 @@ namespace Draw {
             }
         }
 
+        // using export from https://www.pentacom.jp/pentacom/bitfontmaker2/
+        // which outputs weirdly right to left i think, mirrored
+        // so `draw_text_immediate` has to account for that
+        // likely because it's a Japan website. good enough for basics for now
+        // but worth a param/flag in the future to support both
         void draw_text_immediate(std::vector<uint32_t>& buf, int x, int y, const std::string& text, uint32_t color, int scale) {
             // Ensure scale is at least 1x
             if (scale < 1) scale = 1;
@@ -105,7 +111,10 @@ namespace Draw {
                     int tx = x + lx, ty = y + ly;
                     if (tx >= 0 && tx < Game::WIDTH && ty >= 0 && ty < Game::HEIGHT && ly < height) {
                         uint32_t color = GLOBAL_PALETTE[pal_idx];
-                        if ((color & 0xFF000000) != 0x00000000) buf[ty * Game::WIDTH + tx] = color;
+                        if ((color & 0xFF000000) != 0x00000000) {
+                            uint32_t dest_idx = ty * Game::WIDTH + tx;
+                            buf[dest_idx] = blend_pixel(buf[dest_idx], color);
+                        }
                     }
                 }
             }
