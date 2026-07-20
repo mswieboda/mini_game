@@ -73,7 +73,7 @@ if pal_file then
     if pal then
         for i = 0, #pal - 1 do
             local color = pal:getColor(i)
-            pal_file:write(string.format("%d %d %d\n", color.red, color.green, color.blue))
+            pal_file:write(string.format("%d %d %d %d\n", color.red, color.green, color.blue, color.alpha))
         end
     end
     pal_file:close()
