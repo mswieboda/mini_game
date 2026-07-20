@@ -25,7 +25,14 @@ public:
     void update(float dt) {
         processPendingChanges();
 
-        if (m_current_scene) m_current_scene->update(*this, dt);
+        // Inside SceneManager::update (or main loop)
+        if (m_current_scene) {
+            // Run internal entity timing (animations for now)
+            m_current_scene->update_entities(dt);
+
+            // Run custom scene game play
+            m_current_scene->update(*this, dt);
+        }
     }
 
     void draw(std::vector<uint32_t>& pixel_buffer) {

@@ -25,6 +25,10 @@ namespace Draw {
         uint16_t pixel_data_size;
         int width;
         int height;
+        int src_x;
+        int src_y;
+        int src_w;
+        int src_h;
     };
 
     // --- 2. UNIFIED PACKET ---
@@ -49,6 +53,13 @@ namespace Draw {
     void text(int x, int y, const std::string& text, uint32_t color, int scale = 1, int z_index = 1);
     void rect(int x, int y, int width, int height, uint32_t color, bool fill = true, int z_index = 1);
     void sprite(int x, int y, const uint8_t* pixel_data, uint16_t pixel_data_size, int width, int height, int z_index = 1);
+    void sprite_frame(
+        int screen_x, int screen_y,
+        const uint8_t* sheet_pixels, uint16_t sheet_pixels_size,
+        int sheet_width, int sheet_height,
+        int src_x, int src_y, int src_w, int src_h,
+        int z_index = 1
+    );
 
     // Process, order, and draw everything to the screen buffer
     void flush_pipeline(std::vector<uint32_t>& buffer, uint32_t background_color);

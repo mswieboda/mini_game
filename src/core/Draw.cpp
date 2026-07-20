@@ -100,20 +100,70 @@ namespace Draw {
             }
         }
 
-        void draw_sprite_immediate(std::vector<uint32_t>& buf, int x, int y, const uint8_t* pixel_data, uint16_t pixel_data_size, int width, int height) {
-            int px_idx = 0; uint16_t cursor = 0;
+        // void draw_sprite_immediate(std::vector<uint32_t>& buf, int x, int y, const uint8_t* pixel_data, uint16_t pixel_data_size, int width, int height) {
+        //     int px_idx = 0; uint16_t cursor = 0;
+        //     while (cursor < pixel_data_size) {
+        //         // NOTE: pixel_data uses Run-Length Encoding (RLE).
+        //         // Format: [run_length, palette_index] -> e.g., [100, 5] means "draw 100 pixels of palette color 5"
+        //         uint8_t run = pixel_data[cursor++]; uint8_t pal_idx = pixel_data[cursor++];
+        //         for (uint8_t i = 0; i < run; ++i) {
+        //             int lx = px_idx % width, ly = px_idx / width; px_idx++;
+        //             int tx = x + lx, ty = y + ly;
+        //             if (tx >= 0 && tx < Game::WIDTH && ty >= 0 && ty < Game::HEIGHT && ly < height) {
+        //                 uint32_t color = GLOBAL_PALETTE[pal_idx];
+        //                 if ((color & 0xFF000000) != 0x00000000) {
+        //                     uint32_t dest_idx = ty * Game::WIDTH + tx;
+        //                     buf[dest_idx] = blend_pixel(buf[dest_idx], color);
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
+        void draw_sprite_frame_immediate(
+            std::vector<uint32_t>& buf,
+            int x, int y,
+            const uint8_t* pixel_data,
+            uint16_t pixel_data_size,
+            int width,
+            int height,
+            int src_x,
+            int src_y,
+            int src_w,
+            int src_h
+        ) {
+            int px_idx = 0;
+            uint16_t cursor = 0;
+
             while (cursor < pixel_data_size) {
-                // NOTE: pixel_data uses Run-Length Encoding (RLE).
-                // Format: [run_length, palette_index] -> e.g., [100, 5] means "draw 100 pixels of palette color 5"
-                uint8_t run = pixel_data[cursor++]; uint8_t pal_idx = pixel_data[cursor++];
+                // RLE Decompression: [run_length, palette_index]
+                uint8_t run = pixel_data[cursor++];
+                uint8_t pal_idx = pixel_data[cursor++];
+
                 for (uint8_t i = 0; i < run; ++i) {
-                    int lx = px_idx % width, ly = px_idx / width; px_idx++;
-                    int tx = x + lx, ty = y + ly;
-                    if (tx >= 0 && tx < Game::WIDTH && ty >= 0 && ty < Game::HEIGHT && ly < height) {
-                        uint32_t color = GLOBAL_PALETTE[pal_idx];
-                        if ((color & 0xFF000000) != 0x00000000) {
-                            uint32_t dest_idx = ty * Game::WIDTH + tx;
-                            buf[dest_idx] = blend_pixel(buf[dest_idx], color);
+                    // Local 2D coordinates inside the entire master sheet texture
+                    int lx = px_idx % width;
+                    int ly = px_idx / width;
+                    px_idx++;
+
+                    // Check if this pixel falls inside the cropped frame's source bounds
+                    if (lx >= src_x && lx < src_x + src_w &&
+                        ly >= src_y && ly < src_y + src_h) {
+
+                        // Calculate destination screen coordinates
+                        // Offset by (lx - src_x) and (ly - src_y) so the sub-frame aligns to (x, y)
+                        int tx = x + (lx - src_x);
+                        int ty = y + (ly - src_y);
+
+                        // Screen bounds check
+                        if (tx >= 0 && tx < Game::WIDTH && ty >= 0 && ty < Game::HEIGHT) {
+                            uint32_t color = GLOBAL_PALETTE[pal_idx];
+
+                            // Alpha check & Blending
+                            if ((color & 0xFF000000) != 0x00000000) {
+                                uint32_t dest_idx = ty * Game::WIDTH + tx;
+                                buf[dest_idx] = blend_pixel(buf[dest_idx], color);
+                            }
                         }
                     }
                 }
@@ -138,7 +188,23 @@ namespace Draw {
     }
 
     void sprite(int x, int y, const uint8_t* pixel_data, uint16_t pixel_data_size, int width, int height, int z_index) {
-        g_queue.push_back({ x, y, z_index, SpriteData{ pixel_data, pixel_data_size, width, height } });
+        g_queue.push_back({
+            x, y, z_index,
+            SpriteData{ pixel_data, pixel_data_size, width, height, 0, 0, width, height }
+        });
+    }
+
+    void sprite_frame(
+        int screen_x, int screen_y,
+        const uint8_t* pixels, uint16_t pixels_size,
+        int width, int height,
+        int src_x, int src_y, int src_w, int src_h,
+        int z_index
+    ) {
+        g_queue.push_back({
+            screen_x, screen_y, z_index,
+            SpriteData{ pixels, pixels_size, width, height, src_x, src_y, src_w, src_h }
+        });
     }
 
     void flush_pipeline(std::vector<uint32_t>& buffer, uint32_t background_color) {
@@ -169,7 +235,18 @@ namespace Draw {
                     draw_rect_immediate(buffer, cmd.x, cmd.y, arg.width, arg.height, arg.color, arg.fill);
                 } 
                 else if constexpr (std::is_same_v<T, SpriteData>) {
-                    draw_sprite_immediate(buffer, cmd.x, cmd.y, arg.pixel_data, arg.pixel_data_size, arg.width, arg.height);
+                    draw_sprite_frame_immediate(
+                        buffer,
+                        cmd.x, cmd.y,
+                        arg.pixel_data,
+                        arg.pixel_data_size,
+                        arg.width,
+                        arg.height,
+                        arg.src_x,
+                        arg.src_y,
+                        arg.src_w,
+                        arg.src_h
+                    );
                 }
             }, cmd.data);
         }

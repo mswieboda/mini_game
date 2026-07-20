@@ -2,16 +2,11 @@
 #include <vector>
 #include <cstddef>
 #include <cstdint>
-#include <MiniFB.h>
+#include <string>
 #include "Entity.h"
 #include "Draw.h"
-#include "Log.h"
 
 class SceneManager; // Forward declaration
-
-// Helper type for std::visit overloaded lambdas
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 class Scene {
 protected:
@@ -26,68 +21,18 @@ public:
     virtual void init(SceneManager& sm) = 0;
     virtual void update(SceneManager& sm, float dt) = 0;
 
-    // The core draw engine function called by SceneManager::draw.
-    // Queues all entity and custom draw commands into the pipeline.
-    // NOTE: flush_pipeline is intentionally NOT called here — SceneManager owns the flush.
-    virtual void draw(std::vector<uint32_t>& screen_buffer) {
-        // Automatically draw all managed entities sorted by z_index
-        draw_entities(screen_buffer);
+    // High-level draw wrapper called by SceneManager
+    virtual void draw(std::vector<uint32_t>& screen_buffer);
 
-        // Hook for child scenes to do any extra custom drawing
-        // (e.g., screen flashes, dynamic particle lines, raw pixel debugging)
-        draw_custom(screen_buffer);
-    }
-
-protected:
-    // Optional virtual hook so child scenes can override custom rendering if needed
-    virtual void draw_custom(std::vector<uint32_t>& screen_buffer) {
-        // Do nothing by default, but available if a scene needs raw rendering
-    }
-
-    // The shared built-in entity rendering pipeline
-    void draw_entities(std::vector<uint32_t>& screen_buffer) {
-        for (const auto& entity : entities) {
-            if (!entity.active) continue;
-
-            // Use a lambda overload pattern for std::visit
-            std::visit(overloaded {
-                [&](const RectangleRender& visual_data) {
-                    Draw::rect(
-                        (int)entity.transform.x,
-                        (int)entity.transform.y,
-                        (int)entity.transform.width,
-                        (int)entity.transform.height,
-                        visual_data.color,
-                        visual_data.fill,
-                        entity.transform.z_index
-                    );
-                },
-                [&](const SpriteRender& visual_data) {
-                    Draw::sprite(
-                        (int)entity.transform.x,
-                        (int)entity.transform.y,
-                        visual_data.pixels,
-                        visual_data.pixels_size,
-                        visual_data.width,
-                        visual_data.height,
-                        entity.transform.z_index
-                    );
-                },
-                [&](const TextRender& visual_data) {
-                    Draw::text(
-                        (int)entity.transform.x,
-                        (int)entity.transform.y,
-                        visual_data.text,
-                        visual_data.color,
-                        visual_data.scale,
-                        entity.transform.z_index
-                    );
-                }
-            }, entity.visual);
-        }
-    }
+    // High-level update wrapper to process internal engine systems (like animations)
+    // Child scenes can optionally call this at the start of their update()
+    // or SceneManager can call it automatically.
+    void update_entities(float dt);
 
     // Returns the index of the first entity with a matching tag.
+    //
+    //
+    // --- EXTRA NOTES ---
     // Prefer caching this in init() rather than calling every frame.
     //
     // NOTE: indices (not pointers/references) are the correct long-term handle
@@ -127,10 +72,12 @@ protected:
     //
     // For AAA-scale needs, look up "Generational Indices" (also called Entity Handles).
     // Used by engines like Unreal, Unity DOTS, and EnTT — worth a search or AI chat.
-    size_t entity_index(const std::string& tag) const {
-        for (size_t i = 0; i < entities.size(); ++i) {
-            if (entities[i].tag == tag) return i;
-        }
-        return SIZE_MAX; // sentinel: no entity found
-    }
+    size_t entity_index(const std::string& tag) const;
+
+protected:
+    // Optional virtual hook for custom raw pixel drawing
+    virtual void draw_custom(std::vector<uint32_t>& screen_buffer);
+
+    // The shared built-in entity rendering pipeline
+    void draw_entities(std::vector<uint32_t>& screen_buffer);
 };
