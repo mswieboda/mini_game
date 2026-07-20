@@ -21,25 +21,60 @@ namespace Log {
     }
 
     void msg(const std::string& message) {
-        std::cout << ">>> [" << get_timestamp() << "] " << message << std::endl;
+        std::cout << message << std::endl;
+    }
+
+    void msg_t(const std::string& message) {
+        std::cout << "[" << get_timestamp() << "] " << message << std::endl;
     }
 
     void fmt(const char* format, ...) {
         va_list args;
         va_start(args, format);
-        
+
         // Determine required buffer size
         va_list args_copy;
         va_copy(args_copy, args);
         int size = vsnprintf(nullptr, 0, format, args_copy);
         va_end(args_copy);
-        
+
         if (size > 0) {
             std::vector<char> buf(size + 1);
             vsnprintf(buf.data(), buf.size(), format, args);
-            std::cout << ">>> [" << get_timestamp() << "] " << buf.data() << std::endl;
+            std::cout << buf.data() << std::endl;
+        }
+
+        va_end(args);
+    }
+
+    void fmt_t(const char* format, ...) {
+        va_list args;
+        va_start(args, format);
+
+        // Determine required buffer size
+        va_list args_copy;
+        va_copy(args_copy, args);
+        int size = vsnprintf(nullptr, 0, format, args_copy);
+        va_end(args_copy);
+
+        if (size > 0) {
+            std::vector<char> buf(size + 1);
+            vsnprintf(buf.data(), buf.size(), format, args);
+            std::cout << "[" << get_timestamp() << "] " << buf.data() << std::endl;
         }
         
         va_end(args);
+    }
+
+    void info(const std::string& message) {
+        msg("[INFO] " + message);
+    }
+
+    void debug(const std::string& message) {
+        msg("[DEBUG] " + message);
+    }
+
+    void error(const std::string& message) {
+        msg("[ERROR] " + message);
     }
 }

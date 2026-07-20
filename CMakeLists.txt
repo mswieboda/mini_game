@@ -36,8 +36,10 @@ endif()
 
 include_directories(deps)
 include_directories(src)
+include_directories(deps/miniaudio)
 
 add_subdirectory(deps/minifb)
+
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 add_executable(mini_game ${SOURCES})

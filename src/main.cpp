@@ -2,6 +2,7 @@
 #include "Game.h"
 #include "core/GameWindow.h"
 #include "core/FrameTime.h"
+#include "core/Audio.h"
 #include "core/Input.h"
 #include "core/SceneManager.h"
 #include "MiniGameScene.h"
@@ -63,6 +64,10 @@ int main() {
     GameWindow game_window(Game::TITLE.data(), Game::WIDTH, Game::HEIGHT);
     FrameTime frame_time(Game::TARGET_FPS);
 
+    if (!Audio::init()) {
+        Log::error("Continuing without audio.");
+    }
+
     // Setup input routing
     mfb_set_keyboard_callback(game_window.raw(), Input::keyboard_callback);
     mfb_set_active_callback(game_window.raw(), Input::window_active_callback);
@@ -86,5 +91,6 @@ int main() {
         }
     }
 
+    Audio::cleanup();
     return 0;
 }

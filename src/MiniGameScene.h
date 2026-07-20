@@ -6,6 +6,8 @@
 #include "core/Scene.h"
 #include "core/Entity.h"
 #include "core/Input.h"
+#include "core/Audio.h"
+#include "SFX.h"
 #include "assets.h"
 
 class MiniGameScene : public Scene {
@@ -97,6 +99,7 @@ public:
     void update(SceneManager& sm, float dt) override {
         float speed = 100.0f * dt;
 
+        // --- player input ---
         if (Input::is_key_pressed(MFB_KB_KEY_LEFT) || Input::is_key_pressed(MFB_KB_KEY_A))
             player().transform.x -= speed;
         if (Input::is_key_pressed(MFB_KB_KEY_RIGHT) || Input::is_key_pressed(MFB_KB_KEY_D))
@@ -106,13 +109,13 @@ public:
         if (Input::is_key_pressed(MFB_KB_KEY_DOWN) || Input::is_key_pressed(MFB_KB_KEY_S))
             player().transform.y += speed;
 
-        // Add fake score
+        // --- Add fake score ---
         if (Input::is_key_just_pressed(MFB_KB_KEY_SPACE)) score += 1;
 
         // Example trigger to go to a Game Over screen if your game had one:
         // if (player_dead) sm.change_scene(std::make_unique<GameOverScene>());
 
-        // test out animation
+        // --- test out animation ---
         if (animation_idx == SIZE_MAX) return;
 
         // Fetch a safe mutable reference to our animation entity
@@ -128,6 +131,27 @@ public:
                 Log::fmt("Animation state changed! is_playing = %s\n",
                          anim->is_playing ? "TRUE" : "FALSE");
             }
+        }
+
+        // --- audio sfx ---
+        // Play presets directly
+        if (Input::is_key_just_pressed(MFB_KB_KEY_P))
+            Audio::play_sfx(SFX::phaser());
+        if (Input::is_key_just_pressed(MFB_KB_KEY_C))
+            Audio::play_sfx(SFX::coin());
+        if (Input::is_key_just_pressed(MFB_KB_KEY_E))
+            Audio::play_sfx(SFX::explosion());
+
+        if (Input::is_key_just_pressed(MFB_KB_KEY_X)) {
+            // Or customize sound parameters on the fly
+            SfxrParams custom_hit;
+            custom_hit.wave_type = SAWTOOTH;
+            custom_hit.start_frequency = 0.5f;
+            custom_hit.slide = -0.15f;
+            custom_hit.sustain_time = 0.25f;
+            custom_hit.decay_time = 0.55f;
+
+            Audio::play_sfx(custom_hit);
         }
     }
 
