@@ -6,12 +6,22 @@
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
-void Scene::draw(std::vector<uint32_t>& screen_buffer) {
-    draw_entities(screen_buffer);
-    draw_custom(screen_buffer);
+inline float interpolate(float prev, float curr, float alpha) {
+    return prev + (curr - prev) * alpha;
 }
 
-void Scene::draw_custom(std::vector<uint32_t>& screen_buffer) {
+void Scene::sync_prev_transforms() {
+    for (auto& entity : entities) {
+        entity.transform_prev = entity.transform;
+    }
+}
+
+void Scene::draw(std::vector<uint32_t>& screen_buffer, float alpha) {
+    draw_entities(screen_buffer, alpha);
+    draw_custom(screen_buffer, alpha);
+}
+
+void Scene::draw_custom(std::vector<uint32_t>& screen_buffer, float alpha) {
     // Optional implementation hook; blank by default
 }
 
@@ -56,15 +66,18 @@ void Scene::update_entities(float dt) {
     }
 }
 
-void Scene::draw_entities(std::vector<uint32_t>& screen_buffer) {
+void Scene::draw_entities(std::vector<uint32_t>& screen_buffer, float alpha) {
     for (const auto& entity : entities) {
         if (!entity.active) continue;
+
+        float draw_x = interpolate(entity.transform_prev.x, entity.transform.x, alpha);
+        float draw_y = interpolate(entity.transform_prev.y, entity.transform.y, alpha);
 
         std::visit(overloaded {
             [&](const RectangleRender& visual_data) {
                 Draw::rect(
-                    (int)entity.transform.x,
-                    (int)entity.transform.y,
+                    (int)draw_x,
+                    (int)draw_y,
                     (int)entity.transform.width,
                     (int)entity.transform.height,
                     visual_data.color,
@@ -75,8 +88,8 @@ void Scene::draw_entities(std::vector<uint32_t>& screen_buffer) {
             },
             [&](const SpriteRender& visual_data) {
                 Draw::sprite(
-                    (int)entity.transform.x,
-                    (int)entity.transform.y,
+                    (int)draw_x,
+                    (int)draw_y,
                     visual_data.pixels,
                     visual_data.pixels_size,
                     visual_data.width,
@@ -93,8 +106,8 @@ void Scene::draw_entities(std::vector<uint32_t>& screen_buffer) {
 
                 // Submit sub-rect slice coordinates to the pipeline queue
                 Draw::sprite_frame(
-                    (int)entity.transform.x,
-                    (int)entity.transform.y,
+                    (int)draw_x,
+                    (int)draw_y,
                     visual_data.sheet_pixels,
                     visual_data.sheet_pixels_size,
                     visual_data.sheet_width,
@@ -108,8 +121,8 @@ void Scene::draw_entities(std::vector<uint32_t>& screen_buffer) {
             },
             [&](const TextRender& visual_data) {
                 Draw::text(
-                    (int)entity.transform.x,
-                    (int)entity.transform.y,
+                    (int)draw_x,
+                    (int)draw_y,
                     visual_data.text,
                     visual_data.color,
                     visual_data.scale,

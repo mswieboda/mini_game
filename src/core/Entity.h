@@ -72,9 +72,14 @@ using RenderComponent = std::variant<SpriteRender, AnimatedSpriteRender, Rectang
 
 struct Entity {
     Transform transform;
+    Transform transform_prev;
     RenderComponent visual;
     bool active = true;
 
     // Simple optional custom tag/ID to identify types (e.g. "player", "coin")
     std::string tag;
+
+    Entity(Transform t, RenderComponent v, bool act = true, std::string tg = "")
+        : transform(t), transform_prev(t), visual(std::move(v)), active(act), tag(std::move(tg)) {}
 };
+

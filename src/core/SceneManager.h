@@ -25,6 +25,9 @@ public:
 
         // Inside SceneManager::update (or main loop)
         if (m_current_scene) {
+            // Capture current transforms as previous
+            m_current_scene->sync_prev_transforms();
+
             // Run internal entity timing (animations for now)
             m_current_scene->update_entities(dt);
 
@@ -33,9 +36,9 @@ public:
         }
     }
 
-    void draw(std::vector<uint32_t>& pixel_buffer) {
+    void draw(std::vector<uint32_t>& pixel_buffer, float alpha = 1.0f) {
         if (m_current_scene) {
-            m_current_scene->draw(pixel_buffer);
+            m_current_scene->draw(pixel_buffer, alpha);
 
             Draw::flush_pipeline(pixel_buffer, m_current_scene->background_color);
         } else {

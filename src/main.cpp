@@ -44,13 +44,8 @@ void frame_updates(GameWindow& window, FrameTime& frame_time, SceneManager& scen
 
 // --- DRAW --- where drawing happens
 void draw(GameWindow& window, FrameTime& frame_time, SceneManager& scene_manager, std::vector<uint32_t>& pixel_buffer) {
-    // TODO: we'll use alpha in the draw methods later
-    // Use alpha to smoothly slide/interpolate visual coordinates
-    // to exactly where they should be at this exact microsecond
-    // float alpha = frame_time.get_alpha();
-    // scene_manager.draw(pixel_buffer, alpha);
-
-    scene_manager.draw(pixel_buffer);
+    float alpha = frame_time.get_alpha();
+    scene_manager.draw(pixel_buffer, alpha);
 
     window.present(pixel_buffer);
 }
