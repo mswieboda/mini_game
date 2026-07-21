@@ -10,6 +10,7 @@ extern "C" {
 #include <mutex>
 #include <cstdlib>
 #include <random>
+#include <thread>
 
 #include "Audio.h"
 #include "Log.h"
@@ -189,12 +190,15 @@ namespace Audio {
     void play_sfx(const SfxrParams& params) {
         if (!g_initialized) return;
 
-        // Generate waveform PCM samples in background thread safely
-        std::vector<float> samples = generate_sfx_buffer(params, 44100);
-        if (samples.empty()) return;
+        std::thread([params]() {
+            std::vector<float> samples = generate_sfx_buffer(params, 44100);
+            if (samples.empty()) return;
 
-        std::lock_guard<std::mutex> lock(g_audio_mutex);
-        g_active_voices.push_back({ std::move(samples), 0, false });
+            std::lock_guard<std::mutex> lock(g_audio_mutex);
+            if (g_initialized) {
+                g_active_voices.push_back({ std::move(samples), 0, false });
+            }
+        }).detach();
     }
 
     bool load_music_from_memory(const uint8_t* data, size_t size) {

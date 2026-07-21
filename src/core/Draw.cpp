@@ -126,6 +126,11 @@ namespace Draw {
                     // Local 2D coordinates inside the entire master sheet texture
                     int lx = px_idx % width;
                     int ly = px_idx / width;
+
+                    if (ly >= src_y + src_h) {
+                        return;
+                    }
+
                     px_idx++;
 
                     // Check if this pixel falls inside the cropped frame's source bounds
