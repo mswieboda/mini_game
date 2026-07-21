@@ -162,7 +162,7 @@ The image packing step expects `aseprite` on your system path. On macOS, Aseprit
 
 If you don't use Aseprite, or prefer to write/generate your C++ asset arrays manually (e.g. using Libresprite, Piskel, GIMP, or custom scripts), you can bypass any part of the automated asset pipeline without breaking your build.
 
-#### 1. Manual Image Data Layout (`src/assets/images.h`)
+#### 1. Manual Image Data Layout (`src/assets/Images.h`)
 
 The software renderer expects a palette lookup table and RLE pair runs:
 
@@ -186,32 +186,49 @@ inline constexpr uint8_t SPRITE_PLAYER[2] = {
 };
 ```
 
-#### 2. Manual Font Data Layout (`src/assets/font_data.h`)
+#### 2. Manual Font Data Layout (`src/assets/Fonts.h`)
 
 Bitmapped fonts store row-level bitmasks (where bit 15 = leftmost pixel column, bit 0 = rightmost):
 
 ```cpp
 #pragma once
 #include <cstdint>
-#include "engine/Font.h"
+#include "core/Font.h"
 
-namespace Font {
-    inline constexpr FontData MY_CUSTOM_FONT = {
-        .size = 8,      // Glyphs are 8x8 pixels
-        .spacing = 6,   // Cursor x-advance step
-        .data = {
-            // [ASCII Code][Row] = 16-bit row bitmask (e.g. 0b1000'0000'0000'0000)
-            [65] = { 0x3C00, 0x6600, 0x6600, 0x7E00, 0x6600, 0x6600, 0x0000, 0x0000 } // 'A'
-        }
-    };
+namespace Assets {
+    namespace Fonts {
+        inline constexpr FontData MY_CUSTOM_FONT = {
+            .size = 16,      // Glyphs are 16x16 pixels
+            .spacing = 10,   // Cursor x-advance step
+            .data = {
+                // Style A: Hexadecimal bitmasks
+                //  (letter 'A' ASCII 65)
+                { 0x3C00, 0x6600, 0x6600, 0x7E00, 0x6600, 0x6600, 0x0000, 0x0000 },
+
+                // Style B: Binary literal bitmasks (what the Crystal packer generates)
+                //  (letter 'A' ASCII 65)
+                {
+                    0b00111100'00000000,
+                    0b01100110'00000000,
+                    0b01100110'00000000,
+                    0b01111110'00000000,
+                    0b01100110'00000000,
+                    0b01100110'00000000,
+                    0b00000000'00000000,
+                    0b00000000'00000000
+                }
+            }
+        };
+    }
 }
+
 ```
 
 #### ⚠️ Protecting Custom Asset Headers
 
-* **Do not place raw source files in `assets/`** if you are writing those corresponding C++ headers by hand. The packer only generates a header if matching files exist in `assets/`.
-* **Avoid running `make clean-assets`** if you store custom headers in `src/assets/`, as `make clean-assets` wipes `src/assets/*`.
-* If you write all assets manually and want to disable automated packing completely, simply edit `Makefile` and remove `$(ASSETS_STAMP)` as a dependency from the `build` target.
+* **Do not place raw source files in `assets/fonts/`, `assets/images/`, or `assets/music/**` if you are writing those corresponding C++ headers by hand. The packer only updates a category if matching source files exist in its respective `assets/` subfolder.
+* **Safe Cleaning:** Your `make clean-assets` command only clears the internal tracking stamps (`build/.*.stamp`), meaning your hand-crafted headers inside `src/assets/` are fully protected from being wiped out.
+* If you write all assets manually and want to disable automated packing completely, you can remove `assets` as a dependency from the `build` target in your `Makefile`.
 
 ---
 
@@ -219,14 +236,24 @@ namespace Font {
 
 ### Automated Asset Packing
 
-Force a manual asset repack:
+Force a manual asset repack across all categories:
+
 ```bash
 make assets
 ```
 
+Or target individual pipelines if needed:
+
+```bash
+make fonts   # Repack fonts only
+make images  # Repack images only
+make music   # Repack music only
+```
+
 ### Build (Debug)
 
-Compiles debug build using parallel jobs:
+Compiles debug build using parallel jobs (automatically triggers asset checks):
+
 ```bash
 make build
 ```
@@ -234,6 +261,7 @@ make build
 ### Run (Debug)
 
 Launches compiled binary:
+
 ```bash
 make run
 ```
@@ -241,13 +269,15 @@ make run
 ### Full Cycle (Default)
 
 Builds assets, compiles, and launches the game:
+
 ```bash
 make
 ```
 
 ### Release Build (Stripped Binary)
 
-Compiles optimized Release build and applies OS-specific symbol stripping (`strip -u -r` on macOS, `strip -s` on Linux/Windows):
+Compiles optimized Release build:
+
 ```bash
 make release
 ```
@@ -255,6 +285,7 @@ make release
 ### Resetting CMake Configuration
 
 If you add/remove C++ files or modify `CMakeLists.txt`, reset the build configuration without wiping built dependency objects:
+
 ```bash
 make config    # Re-evaluates CMakeLists.txt
 make reconfig  # Forces CMake cache refresh (--fresh)
@@ -265,7 +296,7 @@ make reset     # Performs clean + fresh CMake configuration
 
 ```bash
 make clean        # Wipes build output directory (build/Debug or build/Release)
-make clean-assets # Removes generated asset headers and build stamp
+make clean-assets # Removes internal asset tracking stamps (preserves manual src/assets/ files)
 ```
 
 ### Output Location
