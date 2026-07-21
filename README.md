@@ -158,6 +158,122 @@ The image packing step expects `aseprite` on your system path. On macOS, Aseprit
 
 ---
 
+#### 🎨 Image Palette Workflow
+
+All `.aseprite` sprite files are exported through a shared **256-color global palette** (`Assets::Images::GLOBAL_PALETTE[256]` in `src/assets/Images.h`). Pixel data is stored as RLE-compressed palette indices, so every color in every sprite must map to a slot in that global palette.
+
+The pipeline supports three workflows, depending on whether a master palette file (`assets/images/palette.gpl`) exists and whether sprites use **Indexed** or **RGB** color mode.
+
+---
+
+##### ✅ Recommended Workflow: `palette.gpl` + Indexed Mode
+
+This is the most robust approach. It ensures every sprite references a single deterministic palette, and what you see in Aseprite exactly matches what renders in the game.
+
+**How it works:**
+1. `pack_assets.cr` checks for `assets/images/palette.gpl`.
+2. If found, it parses the palette directly (plain text — no Aseprite CLI call needed) and populates `GLOBAL_PALETTE[256]`.
+3. The Lua export script (`aseprite_to_bytes.lua`) also receives the GPL path and uses it to map pixel RGBA values → palette indices, guaranteeing consistency regardless of what palette is embedded in individual `.aseprite` files.
+
+**`palette.gpl` file format** (Aseprite RGBA export):
+```text
+GIMP Palette
+Channels: RGBA
+#
+  0   0   0 255	Black
+ 34  32  52 255	Dark Blue
+ 34  32  52 128	Transparent Shadow
+```
+
+The file is plain text and git-diff friendly. Each line after `#` is `R G B A<tab>Label`.
+
+---
+
+###### Step 1 — Create & Export `palette.gpl` from Aseprite
+
+1. Open any `.aseprite` file (or create a new one) that contains your master palette.
+2. In the **Palette panel** (left side), click the **Palette Options Menu** (the ☰ hamburger icon at the top of the palette panel).
+3. Select **Save Palette**.
+4. Navigate to `assets/images/` and save as **`palette.gpl`**.
+
+> The file must be named exactly `palette.gpl` and placed at `assets/images/palette.gpl` for the pipeline to detect it automatically.
+
+---
+
+###### Step 2 — Load `palette.gpl` into a Sprite File
+
+1. Open a sprite file (e.g. `game-pad.aseprite`).
+2. Click the **Palette Options Menu** (☰).
+3. Select **Load Palette**.
+4. Browse to `assets/images/palette.gpl` and click **Open**.
+5. *(Optional)* Click **Save Palette as Default for New Files** so new `.aseprite` files in this project automatically open with the correct palette.
+
+---
+
+###### Step 3 — Switch to Indexed Color Mode (Enforces Palette)
+
+Switching to **Indexed** mode constrains the sprite to only use colors from the loaded palette. This means what you draw in Aseprite is exactly what the game renders — no color drift or out-of-palette surprises.
+
+1. In Aseprite, go to **Sprite → Color Mode → Indexed**.
+2. Aseprite will remap all existing pixels to the nearest palette color.
+3. With Indexed mode active, you can only paint using colors from your loaded palette.
+
+> **Why Indexed mode matters:** In RGB mode, Aseprite lets you paint any color freely. Those colors may not exist in `palette.gpl`, and the pipeline will fall back to dynamic scanning (see below) — which can produce inconsistent index assignments across sprites.
+
+---
+
+###### Step 4 — App-Wide Palette Preset (Optional Convenience)
+
+To make `palette.gpl` available as a named preset across all files in Aseprite:
+
+1. With the palette loaded, open the **Palette Options Menu** (☰).
+2. Select **Save Palette As Preset...**.
+3. Name it (e.g. `MiniGamePalette`) and click **OK**.
+4. In any future file, open the **Presets** icon (folder/palette icon next to the palette title bar), select `MiniGamePalette`, and click **Load**.
+
+---
+
+##### 🟡 RGB Color Mode (Freeform, No Palette Constraint)
+
+If you keep sprites in **RGB** mode while `palette.gpl` exists, the pipeline still works correctly — pixel RGBA values are mapped to the nearest matching entry in `palette.gpl`. However, any colors you paint that have no exact match in `palette.gpl` will **fail to match** and fall back to palette index `0`.
+
+**Use RGB mode only if:**
+- You are prototyping and don't yet have a finalized palette.
+- You are not using `palette.gpl` at all (see fallback below).
+
+---
+
+##### 🔴 No `palette.gpl` — Dynamic Pixel Scan Fallback
+
+If `assets/images/palette.gpl` does **not** exist, the pipeline falls back to building `GLOBAL_PALETTE` dynamically by scanning all sprites:
+
+1. Each sprite is flattened to an RGB image buffer.
+2. All unique RGBA pixel colors (up to 255 entries, index 255 reserved for fully transparent) are collected and assigned sequential palette indices.
+3. `GLOBAL_PALETTE` is populated by merging all sprites' discovered colors.
+
+**Caveats:**
+- Index assignments are non-deterministic — changing one sprite can shift indices across all sprites.
+- Colors that are visually identical but in different sprites may get different indices if the merge order changes.
+- There is no visual feedback in Aseprite — artists can freely paint out-of-palette colors without knowing.
+
+**When the fallback is useful:**
+- Quick prototyping with freeform RGB sprites before a palette is finalized.
+- Projects that intentionally use per-sprite palettes with no shared color constraint.
+
+> Once a `palette.gpl` is added back to `assets/images/`, all sprites immediately re-anchor to deterministic indices on the next `make` / `make images`.
+
+---
+
+##### Summary Table
+
+| `palette.gpl` | Sprite Color Mode | `GLOBAL_PALETTE` Source | Index Assignment |
+| :---: | :---: | :--- | :--- |
+| ✅ Present | **Indexed** | GPL file (direct parse, no CLI) | Deterministic ✅ |
+| ✅ Present | **RGB** | GPL file | Deterministic, exact-match only ✅ |
+| ❌ Absent | **RGB** or **Indexed** | Dynamic pixel scan across all sprites | Non-deterministic ⚠️ |
+
+---
+
 ### Option B: Hand-Crafted or Alternative Asset Pipelines
 
 If you don't use Aseprite, or prefer to write/generate your C++ asset arrays manually (e.g. using Libresprite, Piskel, GIMP, or custom scripts), you can bypass any part of the automated asset pipeline without breaking your build.
