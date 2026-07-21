@@ -58,10 +58,22 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_libraries(${GAME_BIN} PRIVATE X11::X11 pthread GL)
 endif()
 
-# Only strip if we are building in Release mode
+# Only strip and pack if we are building in Release mode
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    # Strip symbols
     add_custom_command(TARGET ${GAME_BIN} POST_BUILD
         COMMAND ${CMAKE_STRIP} -u -r $<TARGET_FILE:${GAME_BIN}>
-        COMMENT "Stripping debug symbols from the binary..."
+        COMMENT "Stripping debug symbols from binary..."
     )
+
+    # Check for UPX on system and compress
+    find_program(UPX_EXECUTABLE upx)
+    if(UPX_EXECUTABLE)
+        add_custom_command(TARGET ${GAME_BIN} POST_BUILD
+            COMMAND ${UPX_EXECUTABLE} --best $<TARGET_FILE:${GAME_BIN}>
+            COMMENT "Packing binary with UPX..."
+        )
+    else()
+        message(STATUS "UPX not found. Skipping executable compression.")
+    endif()
 endif()

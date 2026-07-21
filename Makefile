@@ -15,7 +15,7 @@ ASSETS_STAMP := build/.assets.stamp
 .PHONY: all assets build run clean build-release run-release clean-release release
 
 # DEFAULT WORKFLOW
-all: assets build run
+all: build run
 
 # The script runs ONLY ONCE when any asset file or the script itself changes
 $(ASSETS_STAMP): $(ASSET_SRCS) $(ASSETS_SCRIPT_SRC) $(ASSETS_SCRIPTS)

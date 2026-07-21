@@ -1,21 +1,98 @@
 # mini_game
 
-Boilerplate project for a C++ `minifb` game, via macOS or Linux
+Boilerplate project for a C++ `minifb` game, via macOS or Linux.
 
-## Installation
+## 🧰 Toolchain & Dependencies
 
-### Dependencies:
+To build the executable and run the asset pipeline from scratch, ensure you have the required host dependencies installed.
 
+### System Requirements Summary
+
+* **C++ Compiler:** C++20 compatible (`clang++` or `g++`)
+* **Build System:** `cmake` (>= 3.16) and `make`
+* **Asset Pipeline:** `crystal` (v1.20.2 recommended)
+* **Executable Packer:** `upx` (Optional for release builds, compresses binary size)
+* **Pixel Art Editor:** `aseprite` (Optional, auto-exports sprites to C++ headers)
+
+---
+
+### macOS Setup
+
+Install the required tools using [Homebrew](https://brew.sh/):
+
+```bash
+# Core build tools and compression utility
+brew install cmake make upx crystal
+
+# Optional: Version manager alternative if using .tool-versions (asdf / mise)
+brew install asdf
 ```
-git submodule update --init --recursive
-```
 
-#### Linux specific
+---
 
-```
+### Linux (Ubuntu/Debian) Setup
+
+1. **System Libraries & Build Tools:**
+
+```bash
 sudo apt update
-sudo apt install build-essential cmake libx11-dev libgl1-mesa-dev
+sudo apt install -y build-essential cmake make libx11-dev libgl1-mesa-dev upx
 ```
+
+2. **Crystal Language:**
+
+Install Crystal via official APT repositories or snap:
+
+```bash
+# Via Snap:
+sudo snap install crystal --classic
+
+# Or follow official repository installation instructions at [https://crystal-lang.org/install/](https://crystal-lang.org/install/)
+```
+
+---
+
+### Managing Crystal & Tools via `.tool-versions` (`asdf` / `mise`)
+
+If you use a polyglot version manager like [`asdf`](https://asdf-vm.com/) or [`mise`](https://mise.jdx.dev/), a `toolchain/.tool-versions` file is provided to pin exact versions:
+
+```text
+crystal 1.20.2
+```
+
+To install the configured versions:
+
+* **`asdf` Users:**
+  ```bash
+  asdf plugin add crystal
+  asdf install
+  ```
+
+* **`mise` Users:**
+  ```bash
+  mise install
+  ```
+
+---
+
+## 🚀 Installation & First Run
+
+1. **Clone with Submodules:**
+
+   ```bash
+   git clone --recursive [https://github.com/mswieboda/mini_game.git](https://github.com/mswieboda/mini_game.git)
+   cd mini_game
+   ```
+
+   *(If already cloned without submodules, run `git submodule update --init --recursive`)*
+
+2. **Build and Run:**
+
+   ```bash
+   make
+   ```
+
+---
 
 ## 🛠️ Asset Pipeline Documentation & Troubleshooting
 
@@ -32,21 +109,21 @@ The packing script expects the keyword `aseprite` to be mapped to your system co
 
 2. Create a path-relative wrapper shell file at your local binary directory (e.g., `~/.local/bin/aseprite` or `/usr/local/bin/aseprite` depending on what is tracked in your shell profile's `$PATH` layout):
 
-  `aseprite` file:
-  ```bash
-  #!/bin/bash
-  exec /Applications/Aseprite.app/Contents/MacOS/aseprite "$@"
-  ```
+   `aseprite` file:
+   ```bash
+   #!/bin/bash
+   exec /Applications/Aseprite.app/Contents/MacOS/aseprite "$@"
+   ```
 
 3. Mark the script executable:
-  ```bash
-  chmod +x ~/.local/bin/aseprite
-  ```
+   ```bash
+   chmod +x ~/.local/bin/aseprite
+   ```
 
 4. Verify your terminal execution:
-  ```bash
-  aseprite --version
-  ```
+   ```bash
+   aseprite --version
+   ```
 
 ### Option B: Alternative Editors (Without Automatic Aseprite Pipeline)
 
@@ -54,13 +131,12 @@ If you do not have Aseprite installed, or prefer to use an alternative editor (l
 
 The C++ core renderer asks for two items inside `src/assets.h` layout:
 
-An array of up to `256` `uint32_t` hex-values representing your color index lookup.
-
-An array of pairs `[count, color_index]`` tracking your compressed RLE image byte stream.
+1. An array of up to `256` `uint32_t` hex-values representing your color index lookup.
+2. An array of pairs `[count, color_index]` tracking your compressed RLE image byte stream.
 
 #### Manual Data Interop Layout
 
-Simply bypass the automatic asset compilation setup, create src/engine/assets.h yourself, and populate it manually matching this exact blueprint:
+Simply bypass the automatic asset compilation setup, create `src/engine/assets.h` yourself, and populate it manually matching this exact blueprint:
 
 ```cpp
 #pragma once
@@ -85,9 +161,11 @@ const uint8_t SPRITE_PLAYER[2] = {
 
 If you maintain this format, your software game loop will build flawlessly using the generic workspace `make build` and `make run` pipeline controls, regardless of where or how you built the hex sequences!
 
-## Build & Run Usage
+---
 
-Build and run via `make` and `Makefile`:
+## 📦 Build & Run Usage
+
+Build and run via `make`:
 
 ### Assets (with Aseprite - OPTIONAL)
 
@@ -95,63 +173,53 @@ Build and run via `make` and `Makefile`:
 make assets
 ```
 
-### Build
+### Build (Debug)
 
 ```bash
 make build
 ```
 
-### Run
+### Run (Debug)
 
 ```bash
 make run
 ```
 
-### Build & Run
-
-```bash
-make build run
-```
-
-or
+### Build & Run (Debug)
 
 ```bash
 make
 ```
 
-for short
-
-there are also `release` modes for the optimized compile:
+### Release Mode (Stripped & UPX Compressed)
 
 ```bash
+# Build release binary
 make build-release
-```
 
-```bash
+# Run release binary
 make run-release
-```
 
-and
-
-```bash
-make clean-release
-```
-
-and finally this is an alias/shortcut for clean & build & run for `release` mode:
-
-```bash
+# Clean & Build & Run release binary shortcut
 make release
+```
+
+### Clean Build Output
+
+```bash
+make clean
 ```
 
 ### Output Location
 
-Debug builds will output in `build/Debug` and release in `build/Release`
+* **Debug builds:** `build/Debug/mini_game`
+* **Release builds:** `build/Release/mini_game`
 
-Executable is in `build/{BUILD_MODE}/{GAME_NAME}`
+For game jam submissions, grab the compiled release binary at `build/Release/mini_game`!
 
-All you need to do is copy the binary at `build/mini_game` or `build/{game_name}` and zip it etc if desired.
+---
 
-## Contributing
+## 🤝 Contributing
 
 1. Fork it (<https://github.com/mswieboda/mini_game/fork>)
 2. Create your feature branch (`git checkout -b my-new-feature`)
@@ -159,6 +227,6 @@ All you need to do is copy the binary at `build/mini_game` or `build/{game_name}
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create a new Pull Request
 
-## Contributors
+## 👤 Contributors
 
 - [Matt Swieboda](https://github.com/mswieboda) - creator and maintainer
