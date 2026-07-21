@@ -69,9 +69,13 @@ public:
 
         // Spawn animation
         std::vector<SpriteFrame> pad_frames = {
-            { 0,  0, 32, 32, 150 }, // Frame 0: holds for 150ms
-            { 32, 0, 32, 32, 150 }, // Frame 1: holds for 150ms
-            { 64, 0, 32, 32, 150 }  // Frame 2: holds for 150ms
+            { 0,  0, 32, 48, 150 }, // Frame 0: holds for 150ms
+            { 32, 0, 32, 48, 150 }, // Frame 1: holds for 150ms
+            { 64, 0, 32, 48, 150 }, // Frame 2: holds for 150ms
+            { 96, 0, 32, 48, 150 },
+            { 128, 0, 32, 48, 150 },
+            { 160, 0, 32, 48, 150 },
+            { 192, 0, 32, 48, 150 }
         };
 
         // This plays frames: 0 -> 1 -> 2 -> 1, then loops smoothly back to 0!
@@ -82,11 +86,11 @@ public:
         };
 
         entities.push_back({
-            { 100.0f, 100.0f, 32.0f, 32.0f, 10 }, // Transform (x, y, w, h, z)
+            { 100.0f, 100.0f, 32.0f, 48.0f, 10 }, // Transform (x, y, w, h, z)
             AnimatedSpriteRender{
-                Assets::Images::game_pad, // sheet_pixels pointer
-                Assets::Images::game_pad_len, // data size
-                128, 64, // total sheet width, height
+                Assets::Images::skeleton_walk, // sheet_pixels pointer
+                Assets::Images::skeleton_walk_len, // data size
+                224, 48, // total sheet width, height
                 pad_frames, // our master frame pool
                 walk_anim // active animation blueprint
             },
