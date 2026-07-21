@@ -96,7 +96,7 @@ clean-release:
 	@$(MAKE) clean BUILD=Release
 
 release:
-	@$(MAKE) BUILD=Release reset build-release run-release
+	@$(MAKE) BUILD=Release build-release run-release
 
 # --- CMAKE CONFIG SHORTCUTS ---
 config:
