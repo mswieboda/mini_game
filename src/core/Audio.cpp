@@ -1,9 +1,15 @@
 #define MINIAUDIO_IMPLEMENTATION
+#include "miniaudio.h"
+
+extern "C" {
+#include "pocketmod.h"
+}
+
 #include <algorithm>
 #include <vector>
 #include <mutex>
 #include <cstdlib>
-#include "miniaudio.h"
+
 #include "Audio.h"
 #include "Log.h"
 
@@ -19,6 +25,16 @@ namespace Audio {
     static bool g_initialized = false;
     static std::vector<ActiveVoice> g_active_voices;
     static std::mutex g_audio_mutex;
+
+    // Music State
+    static pocketmod_context g_pocketmod;
+    static const uint8_t* g_music_data = nullptr;
+    static size_t g_music_size = 0;
+    static bool g_music_loaded = false;
+    static bool g_music_playing = false;
+    static bool g_music_paused = false;
+    static bool g_music_loop = true;
+    static float g_music_volume = 0.5f;
 
     // --- SFXR PCM SYNTHESIZER GENERATOR ---
     static std::vector<float> generate_sfx_buffer(const SfxrParams& p, uint32_t sample_rate = 44100) {
@@ -95,11 +111,27 @@ namespace Audio {
 
         std::lock_guard<std::mutex> lock(g_audio_mutex);
 
-        // Mix all active voices into stream
+        // Render Music via pocketmod if playing
+        if (g_music_loaded && g_music_playing && !g_music_paused) {
+            int bytes_requested = frameCount * sizeof(float) * 2;
+            int bytes_rendered = pocketmod_render(&g_pocketmod, pOutputF32, bytes_requested);
+
+            // Apply music volume scaling
+            for (ma_uint32 i = 0; i < frameCount * 2; ++i) {
+                pOutputF32[i] *= g_music_volume;
+            }
+
+            // Loop music if finished
+            if (bytes_rendered == 0 && g_music_loop && g_music_data) {
+                pocketmod_init(&g_pocketmod, g_music_data, static_cast<int>(g_music_size), 44100);
+            }
+        }
+
+        // Mix active SFXR voices on top of music
         for (auto& voice : g_active_voices) {
             if (voice.finished) continue;
 
-            for (ma_uint32 i = 0; i < frameCount; ++i) {
+            for (ma_uint32 i = 0; i < frameCount * 2; ++i) {
                 if (voice.cursor < voice.samples.size()) {
                     pOutputF32[i] += voice.samples[voice.cursor++];
                 } else {
@@ -109,7 +141,7 @@ namespace Audio {
             }
         }
 
-        // Clean up completed voices
+        // Clean up completed SFX voices
         g_active_voices.erase(
             std::remove_if(g_active_voices.begin(), g_active_voices.end(),
                            [](const ActiveVoice& v) { return v.finished; }),
@@ -120,7 +152,7 @@ namespace Audio {
     bool init() {
         ma_device_config config = ma_device_config_init(ma_device_type_playback);
         config.playback.format   = ma_format_f32;
-        config.playback.channels = 1; // Mono stream
+        config.playback.channels = 2; // Stereo stream
         config.sampleRate        = 44100;
         config.dataCallback      = audio_data_callback;
 
@@ -158,4 +190,82 @@ namespace Audio {
         g_active_voices.push_back({ std::move(samples), 0, false });
     }
 
+    bool load_music_from_memory(const uint8_t* data, size_t size) {
+        std::lock_guard<std::mutex> lock(g_audio_mutex);
+
+        g_music_data = data;
+        g_music_size = size;
+
+        if (!pocketmod_init(&g_pocketmod, data, static_cast<int>(size), 44100)) {
+            g_music_loaded = false;
+            g_music_playing = false;
+            g_music_paused = false;
+            return false;
+        }
+
+        g_music_loaded = true;
+        g_music_playing = false;
+        g_music_paused = false;
+        return true;
+    }
+
+    void play_music(bool loop) {
+        std::lock_guard<std::mutex> lock(g_audio_mutex);
+        if (!g_music_loaded) return;
+
+        g_music_loop = loop;
+        g_music_playing = true;
+        g_music_paused = false;
+    }
+
+    void pause_music() {
+        std::lock_guard<std::mutex> lock(g_audio_mutex);
+        if (g_music_playing) {
+            g_music_paused = true;
+        }
+    }
+
+    void resume_music() {
+        std::lock_guard<std::mutex> lock(g_audio_mutex);
+        if (g_music_playing) {
+            g_music_paused = false;
+        }
+    }
+
+    void toggle_music() {
+        std::lock_guard<std::mutex> lock(g_audio_mutex);
+        if (!g_music_playing) return;
+        g_music_paused = !g_music_paused;
+    }
+
+    void stop_music() {
+        std::lock_guard<std::mutex> lock(g_audio_mutex);
+        g_music_playing = false;
+        g_music_paused = false;
+
+        // Rewind track position back to pattern 0
+        if (g_music_loaded && g_music_data) {
+            pocketmod_init(&g_pocketmod, g_music_data, static_cast<int>(g_music_size), 44100);
+        }
+    }
+
+    bool is_music_loaded() {
+        std::lock_guard<std::mutex> lock(g_audio_mutex);
+        return g_music_loaded;
+    }
+
+    bool is_music_playing() {
+        std::lock_guard<std::mutex> lock(g_audio_mutex);
+        return g_music_loaded && g_music_playing && !g_music_paused;
+    }
+
+    bool is_music_paused() {
+        std::lock_guard<std::mutex> lock(g_audio_mutex);
+        return g_music_loaded && g_music_playing && g_music_paused;
+    }
+
+    void set_music_volume(float volume) {
+        std::lock_guard<std::mutex> lock(g_audio_mutex);
+        g_music_volume = std::clamp(volume, 0.0f, 1.0f);
+    }
 }

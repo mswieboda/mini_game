@@ -9,6 +9,7 @@
 #include "core/Audio.h"
 #include "SFX.h"
 #include "assets.h"
+#include "assets/MusicData.h"
 
 class MiniGameScene : public Scene {
 private:
@@ -152,6 +153,20 @@ public:
             custom_hit.decay_time = 0.55f;
 
             Audio::play_sfx(custom_hit);
+        }
+
+        // --- music ---
+        // Load and start playing in your game setup:
+        if (Input::is_key_just_pressed(MFB_KB_KEY_M)) {
+            if (!Audio::is_music_loaded()) {
+                // Load and start playing for the first time
+                if (Audio::load_music_from_memory(Assets::Music::awm_mod, Assets::Music::awm_mod_len)) {
+                    Audio::play_music(/*loop=*/ true);
+                }
+            } else {
+                // Toggle pause/resume state
+                Audio::toggle_music();
+            }
         }
     }
 

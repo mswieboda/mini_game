@@ -4,7 +4,8 @@ cmake_minimum_required(VERSION 3.15)
 if(NOT GAME_BIN)
     set(GAME_BIN "mini_game")
 endif()
-project(${GAME_BIN} CXX)
+
+project(${GAME_BIN} C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -37,12 +38,18 @@ endif()
 include_directories(deps)
 include_directories(src)
 include_directories(deps/miniaudio)
+include_directories(deps/pocketmod)
 
 add_subdirectory(deps/minifb)
 
+file(GLOB_RECURSE CPP_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
+file(GLOB_RECURSE C_SOURCES CONFIGURE_DEPENDS "src/*.c")
 
-file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
-add_executable(mini_game ${SOURCES})
+add_executable(
+    ${GAME_BIN}
+    ${CPP_SOURCES}
+    ${C_SOURCES}
+)
 
 target_link_libraries(${GAME_BIN} PRIVATE minifb)
 

@@ -35,6 +35,28 @@ namespace Audio {
     bool init();
     void cleanup();
 
+    // --- SFX ---
+
     // Triggers an SFXR sound effect
     void play_sfx(const SfxrParams& params);
+
+    // --- Music ---
+
+    // Loading
+    bool load_music_from_memory(const uint8_t* data, size_t size);
+
+    // Playback state controls
+    void play_music(bool loop = true);
+    void pause_music();
+    void resume_music();
+    void toggle_music(); // Convenience method for pause/resume
+    void stop_music();   // Stops and rewinds
+
+    // State queries
+    bool is_music_loaded();
+    bool is_music_playing();
+    bool is_music_paused();
+
+    // Volume
+    void set_music_volume(float volume); // 0.0f to 1.0f
 }
