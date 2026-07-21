@@ -3,8 +3,8 @@
 #include <cstdint>
 
 struct FontData {
-    int size = 16;
-    int spacing = 10;
+    uint8_t size = 16;
+    uint8_t spacing = 10;
     using RowType = uint16_t;
 
     // 128 ASCII chars, up to 16 rows per char

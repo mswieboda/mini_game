@@ -94,22 +94,53 @@ To install the configured versions:
 
 ---
 
+## ⚙️ Customizing Executable Name & Window Title
+
+You can customize your executable output name and window title directly in the `Makefile` or via command-line arguments.
+
+### Method A: Permanent Configuration (Edit Makefile)
+At the top of the `Makefile`, edit the default values:
+```makefile
+NAME  ?= my_awesome_game
+TITLE ?= My Awesome Game
+```
+
+### Method B: On-The-Fly Overrides
+Pass variables directly when running `make`:
+```bash
+make NAME=space_shooter TITLE="Space Shooter v1.0"
+```
+Or for release builds:
+```bash
+make release NAME=space_shooter TITLE="Space Shooter v1.0"
+```
+
 ## 🛠️ Asset Pipeline Documentation & Troubleshooting
 
-The asset system runs on a **Crystal**-powered asset packing utility (`toolchain/src/pack_assets.cr`) that automatically extracts your design assets, applies Run-Length Encoding (RLE) compression, and generates standard C++ array outputs (`src/assets.h`).
+The asset system uses a **Crystal** asset packer (`toolchain/src/pack_assets.cr`) that reads raw source files from the `assets/` folder and generates standard C++ headers directly into `src/assets/`:
+
+| Source Folder | Input Formats | Generated Output Header |
+| :--- | :--- | :--- |
+| `assets/images/` | `.aseprite`, `.ase`, `.png` | `src/assets/images.h` |
+| `assets/fonts/` | `.png`, `.bmp` | `src/assets/font_data.h` |
+| `assets/audio/` | `.mod`, `.xm`, `.wav` | `src/assets/audio_data.h` |
+
+The asset packer runs automatically during `make build` whenever changes to raw assets or toolchain scripts are detected.
+
+---
 
 ### Option A: Using the Automated Aseprite Setup
 
-The packing script expects the keyword `aseprite` to be mapped to your system command-line space. Because Aseprite packages on macOS are wrapped in an application bundle directory, standard symlinks cause resource initialization failures. Follow this setup:
+The image packing step expects `aseprite` on your system path. On macOS, Aseprite is packaged in an application bundle directory (`/Applications/Aseprite.app`), so standard symlinks cause resource initialization failures. Follow this setup:
 
 1. Remove any old symbolic references:
    ```bash
    rm -f ~/.local/bin/aseprite
    ```
 
-2. Create a path-relative wrapper shell file at your local binary directory (e.g., `~/.local/bin/aseprite` or `/usr/local/bin/aseprite` depending on what is tracked in your shell profile's `$PATH` layout):
+2. Create a path-relative wrapper file at `~/.local/bin/aseprite` (or another path directory tracked in your `$PATH`):
 
-   `aseprite` file:
+   File `~/.local/bin/aseprite`:
    ```bash
    #!/bin/bash
    exec /Applications/Aseprite.app/Contents/MacOS/aseprite "$@"
@@ -120,113 +151,121 @@ The packing script expects the keyword `aseprite` to be mapped to your system co
    chmod +x ~/.local/bin/aseprite
    ```
 
-4. Verify your terminal execution:
+4. Verify terminal execution:
    ```bash
    aseprite --version
    ```
 
-### Option B: Alternative Editors (Without Automatic Aseprite Pipeline)
+---
 
-If you do not have Aseprite installed, or prefer to use an alternative editor (like Libresprite, GIMP, or Piskel), you can easily generate data arrays manually!
+### Option B: Hand-Crafted or Alternative Asset Pipelines
 
-The C++ core renderer asks for two items inside `src/assets.h` layout:
+If you don't use Aseprite, or prefer to write/generate your C++ asset arrays manually (e.g. using Libresprite, Piskel, GIMP, or custom scripts), you can bypass any part of the automated asset pipeline without breaking your build.
 
-1. An array of up to `256` `uint32_t` hex-values representing your color index lookup.
-2. An array of pairs `[count, color_index]` tracking your compressed RLE image byte stream.
+#### 1. Manual Image Data Layout (`src/assets/images.h`)
 
-#### Manual Data Interop Layout
-
-Simply bypass the automatic asset compilation setup, create `src/engine/assets.h` yourself, and populate it manually matching this exact blueprint:
+The software renderer expects a palette lookup table and RLE pair runs:
 
 ```cpp
 #pragma once
 #include <cstdint>
 
-// 1. Color lookups (Index 0 is ALWAYS treated as transparency/invisible)
-const uint32_t GLOBAL_PALETTE[256] = {
-    0x00000000, // Index 0: Alpha/Transparent Void
-    0xFF0000FF, // Index 1: Pure Red
-    0x00FF00FF, // Index 2: Pure Green
-    0x0000FFFF, // Index 3: Pure Blue
-    // ... pad with 0x000000FF to 256 elements if desired
+// 1. Color lookups (Index 0 is ALWAYS treated as transparent/void)
+inline constexpr uint32_t GLOBAL_PALETTE[256] = {
+    0x00000000, // Index 0: Transparent
+    0xFF0000FF, // Index 1: Red
+    0x00FF00FF, // Index 2: Green
+    0x0000FFFF, // Index 3: Blue
 };
 
-// 2. Pure RLE Pair sequence: [Pixel Run Length (1-255), Palette Index Number]
-// Example: A 4x4 block of 16 green pixels would just be: { 16, 2 }
-const uint16_t SPRITE_PLAYER_COMPRESSED_SIZE = 2;
-const uint8_t SPRITE_PLAYER[2] = {
+// 2. Pure RLE Pair sequence: [Pixel Run Length (1-255), Palette Index]
+// Example: A 4x4 block of 16 green pixels (Index 2)
+inline constexpr uint16_t SPRITE_PLAYER_COMPRESSED_SIZE = 2;
+inline constexpr uint8_t SPRITE_PLAYER[2] = {
     16, 2
 };
 ```
 
-If you maintain this format, your software game loop will build flawlessly using the generic workspace `make build` and `make run` pipeline controls, regardless of where or how you built the hex sequences!
+#### 2. Manual Font Data Layout (`src/assets/font_data.h`)
 
-##### Modify Makefile so your asset headers are not overridden
+Bitmapped fonts store row-level bitmasks (where bit 15 = leftmost pixel column, bit 0 = rightmost):
 
-If you go the manual asset generation route, you probably should modify the `assets` build usages within `Makefile` for the actions:
+```cpp
+#pragma once
+#include <cstdint>
+#include "engine/Font.h"
 
-Find these actions, and update each one to:
-(make sure they are indented with `\t` tabs not spaces)
+namespace Font {
+    inline constexpr FontData MY_CUSTOM_FONT = {
+        .size = 8,      // Glyphs are 8x8 pixels
+        .spacing = 6,   // Cursor x-advance step
+        .data = {
+            // [ASCII Code][Row] = 16-bit row bitmask (e.g. 0b1000'0000'0000'0000)
+            [65] = { 0x3C00, 0x6600, 0x6600, 0x7E00, 0x6600, 0x6600, 0x0000, 0x0000 } // 'A'
+        }
+    };
+}
 ```
-all: build run
 
-clean:
-  @echo "--- Cleaning [$(BUILD)] Workspace ---"
-  @rm -rf build/$(BUILD)
+#### ⚠️ Protecting Custom Asset Headers
 
-release:
-  @$(MAKE) clean BUILD=Release build-release run-release
-```
-
-But then you will also not get the automated bit font, and Mod music file header generation.
+* **Do not place raw source files in `assets/`** if you are writing those corresponding C++ headers by hand. The packer only generates a header if matching files exist in `assets/`.
+* **Avoid running `make clean-assets`** if you store custom headers in `src/assets/`, as `make clean-assets` wipes `src/assets/*`.
+* If you write all assets manually and want to disable automated packing completely, simply edit `Makefile` and remove `$(ASSETS_STAMP)` as a dependency from the `build` target.
 
 ---
 
 ## 📦 Build & Run Usage
 
-Build and run via `make`:
+### Automated Asset Packing
 
-### Assets (with Aseprite - OPTIONAL see the NOTE above)
-
+Force a manual asset repack:
 ```bash
 make assets
 ```
 
 ### Build (Debug)
 
+Compiles debug build using parallel jobs:
 ```bash
 make build
 ```
 
 ### Run (Debug)
 
+Launches compiled binary:
 ```bash
 make run
 ```
 
-### Assets & Build & Run (Debug)
+### Full Cycle (Default)
 
+Builds assets, compiles, and launches the game:
 ```bash
 make
 ```
 
-### Release Mode (Stripped & UPX Compressed)
+### Release Build (Stripped Binary)
 
+Compiles optimized Release build and applies OS-specific symbol stripping (`strip -u -r` on macOS, `strip -s` on Linux/Windows):
 ```bash
-# Build release binary
-make build-release
-
-# Run release binary
-make run-release
-
-# Clean & Assets & Build & Run release binary shortcut
 make release
 ```
 
-### Clean Build Output
+### Resetting CMake Configuration
+
+If you add/remove C++ files or modify `CMakeLists.txt`, reset the build configuration without wiping built dependency objects:
+```bash
+make config    # Re-evaluates CMakeLists.txt
+make reconfig  # Forces CMake cache refresh (--fresh)
+make reset     # Performs clean + fresh CMake configuration
+```
+
+### Cleaning Output
 
 ```bash
-make clean
+make clean        # Wipes build output directory (build/Debug or build/Release)
+make clean-assets # Removes generated asset headers and build stamp
 ```
 
 ### Output Location

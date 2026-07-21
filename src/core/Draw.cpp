@@ -77,9 +77,9 @@ namespace Draw {
 
                     int base_y = y + (row * scale);
 
-                    // Loop over columns using font.size from the instance
-                    for (int col = 0; col < font.size; ++col) {
-                        if ((font_row >> col) & 0x1) {
+                    // Check up to 16 bit columns per row (bit 15 = leftmost pixel, bit 0 = rightmost)
+                    for (int col = 0; col < 16; ++col) {
+                        if ((font_row >> (15 - col)) & 1) {
                             int base_x = cursor_x + (col * scale);
 
                             for (int sy = 0; sy < scale; ++sy) {
@@ -97,7 +97,7 @@ namespace Draw {
                     }
                 }
 
-                // Advance cursor using this font instance's specific spacing!
+                // Advance cursor using this font instance's specific spacing
                 cursor_x += font.spacing * scale;
             }
         }

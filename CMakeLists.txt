@@ -40,6 +40,9 @@ include_directories(src)
 include_directories(deps/miniaudio)
 include_directories(deps/pocketmod)
 
+set(MINIFB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(MINIFB_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+
 add_subdirectory(deps/minifb)
 
 file(GLOB_RECURSE CPP_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
@@ -60,20 +63,33 @@ endif()
 
 # Only strip and pack if we are building in Release mode
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    # Strip symbols
-    add_custom_command(TARGET ${GAME_BIN} POST_BUILD
-        COMMAND ${CMAKE_STRIP} -u -r $<TARGET_FILE:${GAME_BIN}>
-        COMMENT "Stripping debug symbols from binary..."
-    )
-
-    # Check for UPX on system and compress
-    find_program(UPX_EXECUTABLE upx)
-    if(UPX_EXECUTABLE)
+    # Strip debug symbols and local symbols (saves significant size on macOS)
+    if(APPLE)
+        # macOS Mach-O stripping
         add_custom_command(TARGET ${GAME_BIN} POST_BUILD
-            COMMAND ${UPX_EXECUTABLE} --best $<TARGET_FILE:${GAME_BIN}>
-            COMMENT "Packing binary with UPX..."
+            COMMAND ${CMAKE_STRIP} -u -r $<TARGET_FILE:${GAME_BIN}>
+            COMMENT "Stripping symbols from macOS binary (-u -r)..."
         )
     else()
-        message(STATUS "UPX not found. Skipping executable compression.")
+        # Linux / Windows GNU strip-all
+        add_custom_command(TARGET ${GAME_BIN} POST_BUILD
+            COMMAND ${CMAKE_STRIP} -s $<TARGET_FILE:${GAME_BIN}>
+            COMMENT "Stripping all symbols from binary (-s)..."
+        )
+    endif()
+
+    # UPX compression (Disabled on macOS due to ARM64 SIP/dyld signature restrictions)
+    if(NOT APPLE)
+        find_program(UPX_EXECUTABLE upx)
+        if(UPX_EXECUTABLE)
+            add_custom_command(TARGET ${GAME_BIN} POST_BUILD
+                COMMAND ${UPX_EXECUTABLE} --best $<TARGET_FILE:${GAME_BIN}>
+                COMMENT "Packing binary with UPX..."
+            )
+        else()
+            message(STATUS "UPX not found. Skipping executable compression.")
+        endif()
+    else()
+        message(STATUS "Skipping UPX on macOS to prevent SIP/arm64 SIGKILL issues.")
     endif()
 endif()

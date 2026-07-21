@@ -2,8 +2,9 @@
 NAME ?= mini_game
 TITLE ?= Mini Game
 
-# --- DEFAULT BUILD SETTING (Now defaults to fast Debug) ---
+# --- DEFAULT BUILD SETTING (Debug or Release) ---
 BUILD ?= Debug
+BUILD_DIR = build/$(BUILD)
 
 # --- Asset Packing Configurations ---
 ASSETS_DIR := assets
@@ -12,41 +13,42 @@ ASSETS_SCRIPT_SRC := toolchain/src/pack_assets.cr
 ASSETS_SCRIPTS := $(ASSETS_SCRIPT_SRC) $(shell find toolchain/src/export -type f 2>/dev/null)
 ASSETS_STAMP := build/.assets.stamp
 
-.PHONY: all assets build run clean build-release run-release clean-release release
+.PHONY: all assets build run clean clean-assets build-release run-release clean-release release config reconfig reset
 
 # DEFAULT WORKFLOW
 all: build run
 
-# The script runs ONLY ONCE when any asset file or the script itself changes
-$(ASSETS_STAMP): $(ASSET_SRCS) $(ASSETS_SCRIPT_SRC) $(ASSETS_SCRIPTS)
+# The script runs ONLY when asset files or packer scripts change
+$(ASSETS_STAMP): $(ASSET_SRCS) $(ASSETS_SCRIPTS)
 	@mkdir -p build
-	@echo "--- Asset updates detected! Re-running packer pipeline ---"
-	@crystal run $(ASSETS_SCRIPT_SRC)
+	@if [ -n "$(ASSET_SRCS)" ]; then \
+		echo "--- Asset updates detected! Re-running packer pipeline ---"; \
+		crystal run $(ASSETS_SCRIPT_SRC); \
+	fi
 	@touch $(ASSETS_STAMP)
 
-# Phony 'assets' target points to the stamp file
 assets: $(ASSETS_STAMP)
 
-build:
+build: assets
 	@echo "--- Compiling [$(NAME) | Mode: $(BUILD)] ---"
-	@# Only run CMake generation if the build folder doesn't exist yet
-	@if [ ! -d "build/$(BUILD)" ]; then \
-		cmake -B build/$(BUILD) -DCMAKE_BUILD_TYPE=$(BUILD) -DGAME_BIN=$(NAME) -DGAME_TITLE="$(TITLE)"; \
+	@if [ ! -d "$(BUILD_DIR)" ]; then \
+		cmake -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=$(BUILD) -DGAME_BIN=$(NAME) -DGAME_TITLE="$(TITLE)"; \
 	fi
-	@# Use parallel core compilation (-j) to unleash all your CPU cores!
-	@cmake --build build/$(BUILD) -j
+	@cmake --build $(BUILD_DIR) -j
 
 run:
 	@echo "--- Running [$(NAME) | Mode: $(BUILD)] ---"
-	@./build/$(BUILD)/$(NAME)
+	@./$(BUILD_DIR)/$(NAME)
 
 clean:
-	@echo "--- Cleaning [$(BUILD)] Workspace ---"
-	@rm -rf build/$(BUILD)
-	@rm -rf build/.assets.stamp
-	@rm -rf src/assets/*
+	@echo "--- Cleaning [$(BUILD)] ---"
+	@rm -rf $(BUILD_DIR)
 
-# EXPLICIT RELEASE SHORTCUTS (Overrides the BUILD variable to Release)
+clean-assets:
+	@echo "--- Cleaning Generated Asset Stamp ---"
+	@rm -rf build/.assets.stamp
+
+# --- RELEASE SHORTCUTS ---
 build-release:
 	@$(MAKE) build BUILD=Release
 
@@ -57,4 +59,13 @@ clean-release:
 	@$(MAKE) clean BUILD=Release
 
 release:
-	@$(MAKE) clean BUILD=Release assets build-release run-release
+	@$(MAKE) BUILD=Release reset build-release run-release
+
+# --- CMAKE CONFIG SHORTCUTS ---
+config:
+	cmake -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=$(BUILD) -DGAME_BIN=$(NAME) -DGAME_TITLE="$(TITLE)"
+
+reconfig:
+	cmake -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=$(BUILD) -DGAME_BIN=$(NAME) -DGAME_TITLE="$(TITLE)" --fresh
+
+reset: clean reconfig
