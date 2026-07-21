@@ -9,6 +9,7 @@ extern "C" {
 #include <vector>
 #include <mutex>
 #include <cstdlib>
+#include <random>
 
 #include "Audio.h"
 #include "Log.h"
@@ -92,7 +93,11 @@ namespace Audio {
                     sample = std::sin(phase * 2.0f * 3.14159265f);
                     break;
                 case NOISE:
-                    sample = (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 2.0f - 1.0f;
+                    {
+                        thread_local std::mt19937 generator(std::random_device{}());
+                        std::uniform_real_distribution<float> distribution(-1.0f, 1.0f);
+                        sample = distribution(generator);
+                    }
                     break;
             }
 
@@ -131,9 +136,11 @@ namespace Audio {
         for (auto& voice : g_active_voices) {
             if (voice.finished) continue;
 
-            for (ma_uint32 i = 0; i < frameCount * 2; ++i) {
+            for (ma_uint32 i = 0; i < frameCount; ++i) {
                 if (voice.cursor < voice.samples.size()) {
-                    pOutputF32[i] += voice.samples[voice.cursor++];
+                    float s = voice.samples[voice.cursor++];
+                    pOutputF32[i * 2]     += s;
+                    pOutputF32[i * 2 + 1] += s;
                 } else {
                     voice.finished = true;
                     break;
