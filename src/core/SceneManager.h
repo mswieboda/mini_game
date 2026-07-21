@@ -1,7 +1,6 @@
 #pragma once
 #include <memory>
 #include "Scene.h"
-#include "Game.h"
 
 class SceneManager {
 private:

@@ -25,8 +25,7 @@ public:
     virtual void draw(std::vector<uint32_t>& screen_buffer);
 
     // High-level update wrapper to process internal engine systems (like animations)
-    // Child scenes can optionally call this at the start of their update()
-    // or SceneManager can call it automatically.
+    // Called automatically by SceneManager; child scenes should not call this.
     void update_entities(float dt);
 
     // Returns the index of the first entity with a matching tag.

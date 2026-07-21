@@ -2,7 +2,6 @@
 #include <MiniFB.h>
 #include <vector>
 #include <cstdint>
-#include "Input.h"
 
 class GameWindow {
 private:
