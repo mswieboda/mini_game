@@ -103,7 +103,7 @@ namespace Draw {
             std::vector<uint32_t>& buf,
             int x, int y,
             const uint8_t* pixel_data,
-            uint16_t pixel_data_size,
+            uint32_t pixel_data_size,
             int width,
             int height,
             int src_x,
@@ -112,7 +112,7 @@ namespace Draw {
             int src_h
         ) {
             int px_idx = 0;
-            uint16_t cursor = 0;
+            uint32_t cursor = 0;
 
             while (cursor < pixel_data_size) {
                 // RLE Decompression: [run_length, palette_index]
@@ -188,7 +188,7 @@ namespace Draw {
         g_queue.push_back({ x, y, z_index, sort_y, RectData{ width, height, color, fill, thickness } });
     }
 
-    void sprite(int x, int y, const uint8_t* pixel_data, uint16_t pixel_data_size, int width, int height, int z_index) {
+    void sprite(int x, int y, const uint8_t* pixel_data, uint32_t pixel_data_size, int width, int height, int z_index) {
         int sort_y = 0;
         if (g_y_sort_mode == YSortMode::TopY) {
             sort_y = y;
@@ -203,7 +203,7 @@ namespace Draw {
 
     void sprite_frame(
         int screen_x, int screen_y,
-        const uint8_t* pixels, uint16_t pixels_size,
+        const uint8_t* pixels, uint32_t pixels_size,
         int width, int height,
         int src_x, int src_y, int src_w, int src_h,
         int z_index

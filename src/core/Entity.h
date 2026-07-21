@@ -17,7 +17,7 @@ struct Transform {
 // Renderable variants
 struct SpriteRender {
     const uint8_t* pixels;
-    uint16_t pixels_size;
+    uint32_t pixels_size;
     int width;
     int height;
 };
@@ -41,7 +41,7 @@ struct SpriteAnimation {
 
 struct AnimatedSpriteRender {
     const uint8_t* sheet_pixels;       // Pointer to the raw texture file data
-    uint16_t sheet_pixels_size;
+    uint32_t sheet_pixels_size;
     int sheet_width;
     int sheet_height;
 
