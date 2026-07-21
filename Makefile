@@ -44,7 +44,6 @@ clean:
 	@echo "--- Cleaning [$(BUILD)] Workspace ---"
 	@rm -rf build/$(BUILD)
 	@rm -rf build/.assets.stamp
-	@rm -rf toolchain/build/*
 	@rm -rf src/assets/*
 
 # EXPLICIT RELEASE SHORTCUTS (Overrides the BUILD variable to Release)

@@ -161,13 +161,32 @@ const uint8_t SPRITE_PLAYER[2] = {
 
 If you maintain this format, your software game loop will build flawlessly using the generic workspace `make build` and `make run` pipeline controls, regardless of where or how you built the hex sequences!
 
+##### Modify Makefile so your asset headers are not overridden
+
+If you go the manual asset generation route, you probably should modify the `assets` build usages within `Makefile` for the actions:
+
+Find these actions, and update each one to:
+(make sure they are indented with `\t` tabs not spaces)
+```
+all: build run
+
+clean:
+  @echo "--- Cleaning [$(BUILD)] Workspace ---"
+  @rm -rf build/$(BUILD)
+
+release:
+  @$(MAKE) clean BUILD=Release build-release run-release
+```
+
+But then you will also not get the automated bit font, and Mod music file header generation.
+
 ---
 
 ## 📦 Build & Run Usage
 
 Build and run via `make`:
 
-### Assets (with Aseprite - OPTIONAL)
+### Assets (with Aseprite - OPTIONAL see the NOTE above)
 
 ```bash
 make assets
@@ -185,7 +204,7 @@ make build
 make run
 ```
 
-### Build & Run (Debug)
+### Assets & Build & Run (Debug)
 
 ```bash
 make
@@ -200,7 +219,7 @@ make build-release
 # Run release binary
 make run-release
 
-# Clean & Build & Run release binary shortcut
+# Clean & Assets & Build & Run release binary shortcut
 make release
 ```
 
