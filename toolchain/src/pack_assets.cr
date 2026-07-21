@@ -55,11 +55,40 @@ end
 if should_run?("images", target_filter)
   image_files = Dir.glob("assets/images/*.aseprite")
   if image_files.any?
+    # Check for dedicated master palette file (e.g. assets/images/palette.aseprite)
+    master_palette_file = image_files.find { |f| File.basename(f).downcase.starts_with?("palette") }
+
+    # Exclude master palette file from sprite array generation
+    sprite_files = image_files.reject { |f| f == master_palette_file }
+
+    gpl_file = "assets/images/palette.gpl"
+    gpl_palette = [] of String
+
+    if File.exists?(gpl_file)
+      puts "  [Palette] Direct parsing master GPL palette: #{gpl_file}"
+      File.each_line(gpl_file) do |line|
+        # Skip GPL header lines and comments
+        next if line.starts_with?("GIMP") || line.starts_with?("Channels:") || line.starts_with?("Name:") || line.starts_with?("Columns:") || line.starts_with?("#") || line.strip.empty?
+        # Aseprite GPL format: "  R   G   B  A\tLabel" - split on whitespace, take first 4 numeric tokens
+        parts = line.split.select { |p| p =~ /^\d+$/ }
+        if parts.size >= 4
+          # R G B A
+          gpl_palette << "0x%02X%02X%02X%02X" % {parts[3].to_i, parts[0].to_i, parts[1].to_i, parts[2].to_i}
+        elsif parts.size >= 3
+          # R G B (no alpha)
+          gpl_palette << "0xFF%02X%02X%02X" % {parts[0].to_i, parts[1].to_i, parts[2].to_i}
+        end
+      end
+    end
+
     processed_sprites = [] of ImageExporter::SpriteData
 
-    image_files.each do |file_path|
+    # Process master palette file if present to seed GLOBAL_PALETTE
+    master_sprite = master_palette_file ? ImageExporter.process_sprite(master_palette_file) : nil
+
+    sprite_files.each do |file_path|
       puts "  [Image] #{file_path}"
-      processed_sprites << ImageExporter.process_sprite(file_path)
+      processed_sprites << ImageExporter.process_sprite(file_path, gpl_file)
     end
 
     images_header = String.build do |str|
@@ -70,10 +99,26 @@ if should_run?("images", target_filter)
       str << "namespace Assets {\n"
       str << "    namespace Images {\n\n"
 
-      # Export Global Palette (using palette from first sprite, padded to 256 colors)
-      global_palette = processed_sprites.first.palette.dup
-      while global_palette.size < 256
-        global_palette << "0x00FF00FF" # Padding with magenta default transparency indicator
+      global_palette = Array(String).new(256, "0x00FF00FF") # Default padding with magenta transparency
+
+      if gpl_palette.any?
+        gpl_palette.each_with_index do |color, idx|
+          global_palette[idx] = color if idx < 256
+        end
+      elsif master_sprite
+        puts "  [Palette] Using master palette from #{master_palette_file}"
+        master_sprite.palette.each_with_index do |color, idx|
+          global_palette[idx] = color if idx < 256
+        end
+      end
+
+      # Merge any additional palette entries from sprite files if not set by master
+      processed_sprites.each do |sprite|
+        sprite.palette.each_with_index do |color, idx|
+          if idx < 256 && global_palette[idx] == "0x00FF00FF"
+            global_palette[idx] = color
+          end
+        end
       end
 
       str << "        inline const uint32_t GLOBAL_PALETTE[256] = {\n"
@@ -82,7 +127,7 @@ if should_run?("images", target_filter)
       end
       str << "        };\n\n"
 
-      # Export individual RLE arrays
+      # Export individual RLE arrays (excluding master_palette_file)
       processed_sprites.each do |sprite|
         str << "        inline const size_t #{sprite.name}_len = #{sprite.compressed_size};\n"
         str << "        inline const uint8_t #{sprite.name}[#{sprite.compressed_size}] = {\n"

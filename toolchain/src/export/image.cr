@@ -1,5 +1,3 @@
-# toolchain/src/export/image.cr
-
 require "process"
 require "file"
 require "dir"
@@ -23,7 +21,7 @@ module ImageExporter
     end
   end
 
-  def self.process_sprite(sprite_path : String) : SpriteData
+  def self.process_sprite(sprite_path : String, master_palette_path : String = "") : SpriteData
     Dir.mkdir_p(BUILD_DIR) unless Dir.exists?(BUILD_DIR)
 
     raw_data_file = File.join(BUILD_DIR, "temp_#{Random.rand(10000)}.bin")
@@ -32,14 +30,22 @@ module ImageExporter
     base_name   = File.basename(sprite_path, File.extname(sprite_path))
     symbol_name = base_name.downcase.gsub(/[^a-z0-9_]/, "_")
 
+    args = [
+      "-b", sprite_path,
+      "--script-param", "filename=#{raw_data_file}",
+      "--script-param", "palette=#{palette_file}",
+    ]
+
+    # Pass master palette path to Lua so color_to_index uses the canonical GPL palette
+    if !master_palette_path.empty? && File.exists?(master_palette_path)
+      args += ["--script-param", "master_palette=#{File.expand_path(master_palette_path)}"]
+    end
+
+    args += ["--script", LUA_SCRIPT]
+
     res = Process.run(
       ASEPRITE_CMD,
-      [
-        "-b", sprite_path,
-        "--script-param", "filename=#{raw_data_file}",
-        "--script-param", "palette=#{palette_file}",
-        "--script", LUA_SCRIPT
-      ],
+      args,
       output: Process::Redirect::Inherit,
       error: Process::Redirect::Inherit
     )
