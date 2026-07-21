@@ -3,6 +3,8 @@
 #include <string>
 #include <variant>
 #include <cstdint>
+#include "Font.h"
+#include "assets/Fonts.h"
 
 struct Transform {
     float x = 0.0f;
@@ -60,8 +62,9 @@ struct RectangleRender {
 
 struct TextRender {
     std::string text;
-    uint32_t color;
+    uint32_t color = 0xFFFFFFFF;
     int scale = 1;
+    const FontData* font = &Font::DEFAULT_BLANK;
 };
 
 using RenderComponent = std::variant<SpriteRender, AnimatedSpriteRender, RectangleRender, TextRender>;

@@ -5,7 +5,8 @@
 #include "core/Audio.h"
 #include "core/Input.h"
 #include "core/SceneManager.h"
-#include "MiniGameScene.h"
+#include "core/Log.h"
+#include "MainScene.h"
 
 #include <iostream> // TODO: remove when removing `cout`
 
@@ -78,7 +79,7 @@ int main() {
     SceneManager scene_manager;
 
     // Initialize and change to the first scene
-    scene_manager.change_scene(std::make_unique<MiniGameScene>());
+    scene_manager.change_scene(std::make_unique<MainScene>());
 
     while (game_window.is_running()) {
         Input::update_input_state(game_window.raw());

@@ -1,5 +1,6 @@
 #include "Scene.h"
-#include "Log.h"
+#include "Entity.h"
+#include "Font.h"
 
 // Helper type for std::visit overloaded lambdas
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
@@ -111,7 +112,8 @@ void Scene::draw_entities(std::vector<uint32_t>& screen_buffer) {
                     visual_data.text,
                     visual_data.color,
                     visual_data.scale,
-                    entity.transform.z_index
+                    entity.transform.z_index,
+                    visual_data.font
                 );
             }
         }, entity.visual);

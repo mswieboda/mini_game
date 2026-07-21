@@ -4,4 +4,6 @@
 /.shards/
 *.dwarf
 
+.DS_Store
+
 /build/

@@ -2,7 +2,6 @@
 #include <memory>
 #include "Scene.h"
 #include "Game.h"
-#include "Log.h"
 
 class SceneManager {
 private:

@@ -7,25 +7,25 @@ BUILD ?= Debug
 
 # --- Asset Packing Configurations ---
 ASSETS_DIR := assets
-ASSET_SRCS := $(shell find $(ASSETS_DIR) -type f)
+ASSET_SRCS := $(shell find $(ASSETS_DIR) -type f 2>/dev/null)
 ASSETS_SCRIPT_SRC := toolchain/src/pack_assets.cr
-
-IMAGE_HEADER := src/assets/ImageData.h
-MUSIC_HEADER := src/assets/MusicData.h
-ASSET_HEADERS := $(IMAGE_HEADER) $(MUSIC_HEADER)
+ASSETS_SCRIPTS := $(ASSETS_SCRIPT_SRC) $(shell find toolchain/src/export -type f 2>/dev/null)
+ASSETS_STAMP := build/.assets.stamp
 
 .PHONY: all assets build run clean build-release run-release clean-release release
 
 # DEFAULT WORKFLOW
 all: assets build run
 
-# Grouped rule: tells Make that one invocation of the command generates ALL listed headers
-$(ASSET_HEADERS) &: $(ASSET_SRCS) $(ASSETS_SCRIPT_SRC)
+# The script runs ONLY ONCE when any asset file or the script itself changes
+$(ASSETS_STAMP): $(ASSET_SRCS) $(ASSETS_SCRIPT_SRC) $(ASSETS_SCRIPTS)
+	@mkdir -p build
 	@echo "--- Asset updates detected! Re-running packer pipeline ---"
-	@cd toolchain && crystal run src/pack_assets.cr
+	@crystal run $(ASSETS_SCRIPT_SRC)
+	@touch $(ASSETS_STAMP)
 
-# Explicit target for manual 'make assets' invocation
-assets: $(ASSET_HEADERS)
+# Phony 'assets' target points to the stamp file
+assets: $(ASSETS_STAMP)
 
 build:
 	@echo "--- Compiling [$(NAME) | Mode: $(BUILD)] ---"
@@ -43,6 +43,7 @@ run:
 clean:
 	@echo "--- Cleaning [$(BUILD)] Workspace ---"
 	@rm -rf build/$(BUILD)
+	@rm -rf build/.assets.stamp
 	@rm -rf toolchain/build/*
 	@rm -rf src/assets/*
 

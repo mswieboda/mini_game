@@ -2,7 +2,8 @@
 #include "../Game.h"
 #include "Draw.h"
 #include "Font.h"
-#include "assets/ImageData.h"
+#include "assets/Fonts.h"
+#include "assets/Images.h"
 #include "helpers.h"
 
 namespace Draw {
@@ -19,7 +20,7 @@ namespace Draw {
             return cmd.y + std::visit([](auto&& arg) -> int {
                 using T = std::decay_t<decltype(arg)>;
                 if constexpr (std::is_same_v<T, TextData>) {
-                    return Font::SIZE * arg.scale;
+                    return arg.font->size * arg.scale;
                 } else if constexpr (std::is_same_v<T, RectData>) {
                     return arg.height;
                 } else if constexpr (std::is_same_v<T, SpriteData>) {
@@ -44,42 +45,43 @@ namespace Draw {
             }
         }
 
-        // using export from https://www.pentacom.jp/pentacom/bitfontmaker2/
-        // which outputs weirdly right to left i think, mirrored
-        // so `draw_text_immediate` has to account for that
-        // likely because it's a Japan website. good enough for basics for now
-        // but worth a param/flag in the future to support both
-        void draw_text_immediate(std::vector<uint32_t>& buf, int x, int y, const std::string& text, uint32_t color, int scale) {
-            // Ensure scale is at least 1x
+        void draw_text_immediate(std::vector<uint32_t>& buf, int x, int y,
+                                const std::string& text, uint32_t color, int scale,
+                                const FontData* font_ptr)
+        {
+            // Fallback to DEFAULT_BLANK if font_ptr is ever null
+            if (!font_ptr) {
+                font_ptr = &Font::DEFAULT_BLANK;
+            }
+
+            const auto& font = *font_ptr;
+
             if (scale < 1) scale = 1;
 
             int cursor_x = x;
-            constexpr int total_chars = sizeof(Font::MINI) / sizeof(Font::MINI[0]);
 
             for (char c : text) {
+                uint8_t ascii = static_cast<unsigned char>(c);
+
+                // Handle space gap using the instance's spacing property
                 if (c == ' ') {
-                    // Scale the blank space gap proportionally
-                    cursor_x += 8 * scale;
+                    cursor_x += (font.spacing - 2) * scale;
                     continue;
                 }
 
-                int idx = static_cast<unsigned char>(c) - 33;
-                if (idx < 0 || idx >= total_chars) continue;
+                if (ascii >= 128) continue;
 
-                // Loop over the base font rows
-                for (int row = 0; row < Font::SIZE; ++row) {
-                    Font::RowType font_row = Font::MINI[idx][row];
+                // Loop over rows using font.size from the instance
+                for (int row = 0; row < font.size; ++row) {
+                    FontData::RowType font_row = font.data[ascii][row];
 
-                    // Calculate where this block of pixels starts vertically
                     int base_y = y + (row * scale);
 
-                    // Loop over the base font columns
-                    for (int col = 0; col < Font::SIZE; ++col) {
-                        // If the bit is active, paint a scaled block!
+                    // Loop over columns using font.size from the instance
+                    for (int col = 0; col < font.size; ++col) {
                         if ((font_row >> col) & 0x1) {
                             int base_x = cursor_x + (col * scale);
 
-                            // Draw a 'scale x scale' square block of pixels on the screen
                             for (int sy = 0; sy < scale; ++sy) {
                                 int current_y = base_y + sy;
                                 if (current_y < 0 || current_y >= Game::HEIGHT) continue;
@@ -95,8 +97,8 @@ namespace Draw {
                     }
                 }
 
-                // Move the typewriter cursor forward by the character size multiplied by the scale factor
-                cursor_x += Font::SPACING * scale;
+                // Advance cursor using this font instance's specific spacing!
+                cursor_x += font.spacing * scale;
             }
         }
 
@@ -159,8 +161,8 @@ namespace Draw {
         return g_y_sort_mode;
     }
 
-    void text(int x, int y, const std::string& text, uint32_t color, int scale, int z_index) {
-        g_queue.push_back({ x, y, z_index, TextData{ text, color, scale } });
+    void text(int x, int y, const std::string& text, uint32_t color, int scale, int z_index, const FontData* font) {
+        g_queue.push_back({ x, y, z_index, TextData{ text, color, scale, font } });
     }
 
     void rect(int x, int y, int width, int height, uint32_t color, bool fill, int z_index) {
@@ -209,7 +211,7 @@ namespace Draw {
                 using T = std::decay_t<decltype(arg)>;
 
                 if constexpr (std::is_same_v<T, TextData>) {
-                    draw_text_immediate(buffer, cmd.x, cmd.y, arg.text, arg.color, arg.scale);
+                    draw_text_immediate(buffer, cmd.x, cmd.y, arg.text, arg.color, arg.scale, arg.font);
                 } 
                 else if constexpr (std::is_same_v<T, RectData>) {
                     draw_rect_immediate(buffer, cmd.x, cmd.y, arg.width, arg.height, arg.color, arg.fill);
