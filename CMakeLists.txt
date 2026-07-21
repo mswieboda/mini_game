@@ -10,11 +10,6 @@ project(${GAME_BIN} C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(NOT GAME_TITLE)
-    set(GAME_TITLE "Mini Game")
-endif()
-add_compile_definitions(WINDOW_TITLE="${GAME_TITLE}")
-
 # ----------------------------------------------------
 # 🔧 Build Profiles Configuration (Debug vs Release)
 # ----------------------------------------------------
