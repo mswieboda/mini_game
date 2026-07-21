@@ -43,7 +43,7 @@ namespace Draw {
         }
 
         void draw_text_immediate(std::vector<uint32_t>& buf, int x, int y,
-                                const std::string& text, uint32_t color, int scale,
+                                std::string_view text, uint32_t color, int scale,
                                 const FontData* font_ptr)
         {
             // Fallback to DEFAULT_BLANK if font_ptr is ever null
@@ -167,7 +167,7 @@ namespace Draw {
         g_palette = palette;
     }
 
-    void text(int x, int y, const std::string& text, uint32_t color, int scale, int z_index, const FontData* font) {
+    void text(int x, int y, std::string_view text, uint32_t color, int scale, int z_index, const FontData* font) {
         const FontData* f = font ? font : &Font::DEFAULT_BLANK;
         int sort_y = 0;
         if (g_y_sort_mode == YSortMode::TopY) {

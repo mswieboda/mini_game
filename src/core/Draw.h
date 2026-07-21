@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <string_view>
 #include <variant>
 #include <cstdint>
 #include "Font.h"
@@ -9,7 +10,7 @@ namespace Draw {
 
     // --- 1. DATA PAYLOADS ---
     struct TextData {
-        std::string text;
+        std::string_view text;
         uint32_t color;
         int scale;
         const FontData* font;
@@ -56,7 +57,7 @@ namespace Draw {
     void set_palette(const uint32_t* palette);
 
     // Submit actions to the frame queue
-    void text(int x, int y, const std::string& text, uint32_t color,
+    void text(int x, int y, std::string_view text, uint32_t color,
               int scale = 1, int z_index = 1,
               const FontData* font = &Font::DEFAULT_BLANK);
     void rect(int x, int y, int width, int height, uint32_t color, bool fill = true, int thickness = 1, int z_index = 1);
