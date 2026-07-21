@@ -2,7 +2,7 @@
 #include "../Game.h"
 #include "Draw.h"
 #include "Font.h"
-#include "assets.h"
+#include "assets/ImageData.h"
 #include "helpers.h"
 
 namespace Draw {
@@ -100,26 +100,6 @@ namespace Draw {
             }
         }
 
-        // void draw_sprite_immediate(std::vector<uint32_t>& buf, int x, int y, const uint8_t* pixel_data, uint16_t pixel_data_size, int width, int height) {
-        //     int px_idx = 0; uint16_t cursor = 0;
-        //     while (cursor < pixel_data_size) {
-        //         // NOTE: pixel_data uses Run-Length Encoding (RLE).
-        //         // Format: [run_length, palette_index] -> e.g., [100, 5] means "draw 100 pixels of palette color 5"
-        //         uint8_t run = pixel_data[cursor++]; uint8_t pal_idx = pixel_data[cursor++];
-        //         for (uint8_t i = 0; i < run; ++i) {
-        //             int lx = px_idx % width, ly = px_idx / width; px_idx++;
-        //             int tx = x + lx, ty = y + ly;
-        //             if (tx >= 0 && tx < Game::WIDTH && ty >= 0 && ty < Game::HEIGHT && ly < height) {
-        //                 uint32_t color = GLOBAL_PALETTE[pal_idx];
-        //                 if ((color & 0xFF000000) != 0x00000000) {
-        //                     uint32_t dest_idx = ty * Game::WIDTH + tx;
-        //                     buf[dest_idx] = blend_pixel(buf[dest_idx], color);
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-
         void draw_sprite_frame_immediate(
             std::vector<uint32_t>& buf,
             int x, int y,
@@ -157,7 +137,7 @@ namespace Draw {
 
                         // Screen bounds check
                         if (tx >= 0 && tx < Game::WIDTH && ty >= 0 && ty < Game::HEIGHT) {
-                            uint32_t color = GLOBAL_PALETTE[pal_idx];
+                            uint32_t color = Assets::Images::GLOBAL_PALETTE[pal_idx];
 
                             // Alpha check & Blending
                             if ((color & 0xFF000000) != 0x00000000) {

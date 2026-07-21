@@ -8,7 +8,7 @@
 #include "core/Input.h"
 #include "core/Audio.h"
 #include "SFX.h"
-#include "assets.h"
+#include "assets/ImageData.h"
 #include "assets/MusicData.h"
 
 class MiniGameScene : public Scene {
@@ -51,8 +51,8 @@ public:
                 10 // z-index
             },
             SpriteRender{
-                SPRITE_GAME_PAD, // pixels
-                SPRITE_GAME_PAD_COMPRESSED_SIZE, // pixels size
+                Assets::Images::game_pad, // pixels
+                Assets::Images::game_pad_len, // pixels size
                 128, // width
                 64 // height
             },
@@ -75,23 +75,23 @@ public:
         // 2. Define the playlist/blueprint sequence
         // This plays frames: 0 -> 1 -> 2 -> 1, then loops smoothly back to 0!
         SpriteAnimation walk_anim = {
-            "walk",           // name
-            {0, 1, 2, 1},     // frame_indices sequence (Recycles frame 1!)
-            true              // loops automatically
+            "walk", // name
+            {0, 1, 2, 1}, // frame_indices sequence (Recycles frame 1!)
+            true // loops automatically
         };
 
         // 3. Assemble and push the Animated entity into the scene vector
         entities.push_back({
             { 100.0f, 100.0f, 32.0f, 32.0f, 10 }, // Transform (x, y, w, h, z)
             AnimatedSpriteRender{
-                SPRITE_GAME_PAD,                  // sheet_pixels pointer
-                SPRITE_GAME_PAD_COMPRESSED_SIZE,  // data size
-                128, 64,                          // total sheet width / height
-                pad_frames,                       // our master frame pool
-                walk_anim                         // active animation blueprint
+                Assets::Images::game_pad, // sheet_pixels pointer
+                Assets::Images::game_pad_len, // data size
+                128, 64, // total sheet width, height
+                pad_frames, // our master frame pool
+                walk_anim // active animation blueprint
             },
-            true,                                 // active
-            "animation"                           // tag
+            true, // active
+            "animation" // tag
         });
 
         animation_idx = entity_index("animation");
@@ -160,7 +160,7 @@ public:
         if (Input::is_key_just_pressed(MFB_KB_KEY_M)) {
             if (!Audio::is_music_loaded()) {
                 // Load and start playing for the first time
-                if (Audio::load_music_from_memory(Assets::Music::awm_mod, Assets::Music::awm_mod_len)) {
+                if (Audio::load_music_from_memory(Assets::Music::awm, Assets::Music::awm_len)) {
                     Audio::play_music(/*loop=*/ true);
                 }
             } else {

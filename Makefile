@@ -5,44 +5,46 @@ TITLE ?= Mini Game
 # --- DEFAULT BUILD SETTING (Now defaults to fast Debug) ---
 BUILD ?= Debug
 
-# Automatically scans the assets folder for all .aseprite sheets
-ASSET_SRCS := $(wildcard assets/*.aseprite)
+# --- Asset Packing Configurations ---
+ASSETS_DIR := assets
+ASSET_SRCS := $(shell find $(ASSETS_DIR) -type f)
 ASSETS_SCRIPT_SRC := toolchain/src/pack_assets.cr
-ASSETS_HEADER := src/assets.h
 
-.PHONY: all build run clean build-release run-release clean-release
+IMAGE_HEADER := src/assets/ImageData.h
+MUSIC_HEADER := src/assets/MusicData.h
+ASSET_HEADERS := $(IMAGE_HEADER) $(MUSIC_HEADER)
+
+.PHONY: all assets build run clean build-release run-release clean-release release
 
 # DEFAULT WORKFLOW
-all: $(ASSETS_HEADER) build run
+all: assets build run
 
-# The Makefile checks the timestamps of ALL matching files inside $(ASSET_SRCS)
-$(ASSETS_HEADER): $(ASSET_SRCS) $(ASSETS_SCRIPT_SRC)
+# Grouped rule: tells Make that one invocation of the command generates ALL listed headers
+$(ASSET_HEADERS) &: $(ASSET_SRCS) $(ASSETS_SCRIPT_SRC)
 	@echo "--- Asset updates detected! Re-running packer pipeline ---"
-	cd toolchain && crystal run src/pack_assets.cr
+	@cd toolchain && crystal run src/pack_assets.cr
 
-assets: $(ASSETS_HEADER)
-	@echo "--- Packing Assets via Aseprite ---"
-	cd toolchain && crystal run src/pack_assets.cr
+# Explicit target for manual 'make assets' invocation
+assets: $(ASSET_HEADERS)
 
 build:
 	@echo "--- Compiling [$(NAME) | Mode: $(BUILD)] ---"
-	# Only run CMake generation if the build folder doesn't exist yet
+	@# Only run CMake generation if the build folder doesn't exist yet
 	@if [ ! -d "build/$(BUILD)" ]; then \
 		cmake -B build/$(BUILD) -DCMAKE_BUILD_TYPE=$(BUILD) -DGAME_BIN=$(NAME) -DGAME_TITLE="$(TITLE)"; \
 	fi
-	# Use parallel core compilation (-j) to unleash all your CPU cores!
-	cmake --build build/$(BUILD) -j
+	@# Use parallel core compilation (-j) to unleash all your CPU cores!
+	@cmake --build build/$(BUILD) -j
 
 run:
 	@echo "--- Running [$(NAME) | Mode: $(BUILD)] ---"
-	./build/$(BUILD)/$(NAME)
+	@./build/$(BUILD)/$(NAME)
 
 clean:
 	@echo "--- Cleaning [$(BUILD)] Workspace ---"
-	rm -rf build/$(BUILD)
-	rm -rf toolchain/build/*
-	rm -f src/assets.h
-
+	@rm -rf build/$(BUILD)
+	@rm -rf toolchain/build/*
+	@rm -rf src/assets/*
 
 # EXPLICIT RELEASE SHORTCUTS (Overrides the BUILD variable to Release)
 build-release:
