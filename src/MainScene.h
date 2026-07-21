@@ -24,7 +24,7 @@ private:
 
 public:
     void init(SceneManager& sm) override {
-        background_color = 0xFF00cc00; // slight magenta
+        background_color = 0xFF131313; // very dark gray
 
         Draw::set_y_sort_mode(Draw::YSortMode::YPlusHeight);
 
