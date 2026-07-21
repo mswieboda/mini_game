@@ -17,6 +17,9 @@ private:
     size_t score_idx = SIZE_MAX;
     size_t player_idx = SIZE_MAX;
     size_t animation_idx = SIZE_MAX;
+    std::string m_ascii_1 = " !\"#$%&'()*+,-./0123456789:;<=>?@";
+    std::string m_ascii_2 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`";
+    std::string m_ascii_3 = "abcdefghijklmnopqrstuvwxyz{|}~";
 
     Entity& score() { return entities[score_idx]; }
     Entity& player() { return entities[player_idx]; }
@@ -30,12 +33,12 @@ public:
 
         // Spawn small rect layer (z_index: 0)
         entities.push_back({
-            {32, 64, 32, 92, 0}, RectangleRender{0xFF00FF00}, true, "rect"
+            {Game::WIDTH - 32 - 32, 64, 32, 92, 0}, RectangleRender{0xFF00FF00}, true, "rect"
         });
 
         // Spawn outline rect layer to demonstrate fill = false (z_index: 0)
         entities.push_back({
-            {80, 64, 32, 92, 0}, RectangleRender{0xFFFF0000, false, 3}, true, "rect_outline"
+            {Game::WIDTH - 80 - 32, 64, 32, 92, 0}, RectangleRender{0xFFFF0000, false, 3}, true, "rect_outline"
         });
 
         // Spawn some score text
@@ -103,6 +106,32 @@ public:
         });
 
         animation_idx = entity_index("animation");
+
+        // --- ASCII font test ---
+        entities.push_back({
+            {8, 32, 0, 0},
+            TextRender{
+                .text = m_ascii_1,
+                .color = 0xFFFFFFFF,
+                .font = &Assets::Fonts::mini
+            }, true, "score"
+        });
+        entities.push_back({
+            {8, 48, 0, 0},
+            TextRender{
+                .text = m_ascii_2,
+                .color = 0xFFFFFFFF,
+                .font = &Assets::Fonts::mini
+            }, true, "score"
+        });
+        entities.push_back({
+            {8, 64, 0, 0},
+            TextRender{
+                .text = m_ascii_3,
+                .color = 0xFFFFFFFF,
+                .font = &Assets::Fonts::mini
+            }, true, "score"
+        });
     }
 
     void update(SceneManager& sm, float dt) override {
