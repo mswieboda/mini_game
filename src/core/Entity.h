@@ -57,7 +57,8 @@ struct AnimatedSpriteRender {
 
 struct RectangleRender {
     uint32_t color;
-    bool fill = true; // TODO: false not draw yet, it will be filled
+    bool fill = true;
+    int thickness = 1;
 };
 
 struct TextRender {

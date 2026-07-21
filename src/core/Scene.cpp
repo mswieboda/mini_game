@@ -69,6 +69,7 @@ void Scene::draw_entities(std::vector<uint32_t>& screen_buffer) {
                     (int)entity.transform.height,
                     visual_data.color,
                     visual_data.fill,
+                    visual_data.thickness,
                     entity.transform.z_index
                 );
             },

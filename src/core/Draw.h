@@ -20,6 +20,7 @@ namespace Draw {
         int height;
         uint32_t color;
         bool fill;
+        int thickness;
     };
 
     struct SpriteData {
@@ -58,7 +59,7 @@ namespace Draw {
     void text(int x, int y, const std::string& text, uint32_t color,
               int scale = 1, int z_index = 1,
               const FontData* font = &Font::DEFAULT_BLANK);
-    void rect(int x, int y, int width, int height, uint32_t color, bool fill = true, int z_index = 1);
+    void rect(int x, int y, int width, int height, uint32_t color, bool fill = true, int thickness = 1, int z_index = 1);
     void sprite(int x, int y, const uint8_t* pixel_data, uint16_t pixel_data_size, int width, int height, int z_index = 1);
     void sprite_frame(
         int screen_x, int screen_y,

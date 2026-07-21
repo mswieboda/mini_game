@@ -18,13 +18,26 @@ namespace Draw {
             std::fill(buf.begin(), buf.end(), color);
         }
 
-        void draw_rect_immediate(std::vector<uint32_t>& buf, int rx, int ry, int rw, int rh, uint32_t color, bool fill) {
-            // TODO: `fill` unused for now until we impl outline etc
+        void draw_rect_immediate(std::vector<uint32_t>& buf, int rx, int ry, int rw, int rh, uint32_t color, bool fill, int thickness) {
             int start_x = std::max(0, rx), end_x = std::min(Game::WIDTH, rx + rw);
             int start_y = std::max(0, ry), end_y = std::min(Game::HEIGHT, ry + rh);
-            for (int y = start_y; y < end_y; ++y) {
-                for (int x = start_x; x < end_x; ++x) {
-                    buf[y * Game::WIDTH + x] = color;
+            if (fill) {
+                for (int y = start_y; y < end_y; ++y) {
+                    for (int x = start_x; x < end_x; ++x) {
+                        buf[y * Game::WIDTH + x] = color;
+                    }
+                }
+            } else {
+                int t = thickness;
+                if (t <= 0) return;
+                for (int y = start_y; y < end_y; ++y) {
+                    for (int x = start_x; x < end_x; ++x) {
+                        int dx = x - rx;
+                        int dy = y - ry;
+                        if (dx < t || dx >= rw - t || dy < t || dy >= rh - t) {
+                            buf[y * Game::WIDTH + x] = color;
+                        }
+                    }
                 }
             }
         }
@@ -165,14 +178,14 @@ namespace Draw {
         g_queue.push_back({ x, y, z_index, sort_y, TextData{ text, color, scale, f } });
     }
 
-    void rect(int x, int y, int width, int height, uint32_t color, bool fill, int z_index) {
+    void rect(int x, int y, int width, int height, uint32_t color, bool fill, int thickness, int z_index) {
         int sort_y = 0;
         if (g_y_sort_mode == YSortMode::TopY) {
             sort_y = y;
         } else if (g_y_sort_mode == YSortMode::YPlusHeight) {
             sort_y = y + height;
         }
-        g_queue.push_back({ x, y, z_index, sort_y, RectData{ width, height, color, fill } });
+        g_queue.push_back({ x, y, z_index, sort_y, RectData{ width, height, color, fill, thickness } });
     }
 
     void sprite(int x, int y, const uint8_t* pixel_data, uint16_t pixel_data_size, int width, int height, int z_index) {
@@ -229,7 +242,7 @@ namespace Draw {
                     draw_text_immediate(buffer, cmd.x, cmd.y, arg.text, arg.color, arg.scale, arg.font);
                 } 
                 else if constexpr (std::is_same_v<T, RectData>) {
-                    draw_rect_immediate(buffer, cmd.x, cmd.y, arg.width, arg.height, arg.color, arg.fill);
+                    draw_rect_immediate(buffer, cmd.x, cmd.y, arg.width, arg.height, arg.color, arg.fill, arg.thickness);
                 } 
                 else if constexpr (std::is_same_v<T, SpriteData>) {
                     draw_sprite_frame_immediate(

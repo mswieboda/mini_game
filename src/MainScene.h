@@ -33,6 +33,11 @@ public:
             {32, 64, 32, 92, 0}, RectangleRender{0xFF00FF00}, true, "rect"
         });
 
+        // Spawn outline rect layer to demonstrate fill = false (z_index: 0)
+        entities.push_back({
+            {80, 64, 32, 92, 0}, RectangleRender{0xFFFF0000, false, 3}, true, "rect_outline"
+        });
+
         // Spawn some score text
         entities.push_back({
             {16, 16, 0, 0},
@@ -85,7 +90,7 @@ public:
         };
 
         entities.push_back({
-            { 100.0f, 100.0f, 32.0f, 48.0f, 10 }, // Transform (x, y, w, h, z)
+            { 128, 128, 32, 48, 10 }, // Transform (x, y, w, h, z)
             AnimatedSpriteRender{
                 Assets::Images::skeleton_walk, // sheet_pixels pointer
                 Assets::Images::skeleton_walk_len, // data size
