@@ -8,8 +8,6 @@
 #include "core/Log.h"
 #include "MainScene.h"
 
-#include <iostream> // TODO: remove when removing `cout`
-
 // --- UPDATE --- where game logic updates happens
 void frame_updates(GameWindow& window, FrameTime& frame_time, SceneManager& scene_manager) {
     frame_time.update();

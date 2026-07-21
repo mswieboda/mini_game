@@ -1,3 +1,4 @@
+#pragma once
 #include "core/Audio.h"
 
 namespace SFX {

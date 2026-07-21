@@ -39,7 +39,6 @@ public:
             TextRender{
                 .text = std::format("Score: {}", m_score),
                 .color = 0xFF00FF00,
-                .scale = 1, // TODO: maybe not needed and it will use the defaulted value?
                 .font = &Assets::Fonts::mini
             }, true, "score"
         });

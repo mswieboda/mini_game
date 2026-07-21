@@ -73,7 +73,7 @@ struct Entity {
     Transform transform;
     RenderComponent visual;
     bool active = true;
-    
+
     // Simple optional custom tag/ID to identify types (e.g. "player", "coin")
-    std::string tag; 
+    std::string tag;
 };

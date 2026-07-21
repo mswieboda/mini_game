@@ -8,7 +8,7 @@ private:
     std::unique_ptr<Scene> m_current_scene;
     std::unique_ptr<Scene> m_next_scene;
 
-    void processPendingChanges() {
+    void process_pending_changes() {
         if (m_next_scene) {
             m_current_scene = std::move(m_next_scene);
             m_current_scene->init(*this);
@@ -22,7 +22,7 @@ public:
     }
 
     void update(float dt) {
-        processPendingChanges();
+        process_pending_changes();
 
         // Inside SceneManager::update (or main loop)
         if (m_current_scene) {
