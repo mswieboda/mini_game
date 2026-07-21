@@ -38,6 +38,7 @@ namespace Draw {
         int x;
         int y;
         int z_index;
+        int sort_y;
         std::variant<TextData, RectData, SpriteData> data;
     };
 

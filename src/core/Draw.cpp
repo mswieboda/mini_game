@@ -12,23 +12,7 @@ namespace Draw {
         YSortMode g_y_sort_mode = YSortMode::TopY;
         const uint32_t* g_palette = nullptr;
 
-        int get_sort_y(const Command& cmd, YSortMode mode) {
-            if (mode == YSortMode::None) return 0;
-            if (mode == YSortMode::TopY) return cmd.y;
-            
-            // YPlusHeight
-            return cmd.y + std::visit([](auto&& arg) -> int {
-                using T = std::decay_t<decltype(arg)>;
-                if constexpr (std::is_same_v<T, TextData>) {
-                    return arg.font->size * arg.scale;
-                } else if constexpr (std::is_same_v<T, RectData>) {
-                    return arg.height;
-                } else if constexpr (std::is_same_v<T, SpriteData>) {
-                    return arg.height;
-                }
-                return 0;
-            }, cmd.data);
-        }
+
 
         void clear_screen(std::vector<uint32_t>& buf, uint32_t color) {
             std::fill(buf.begin(), buf.end(), color);
@@ -171,16 +155,35 @@ namespace Draw {
     }
 
     void text(int x, int y, const std::string& text, uint32_t color, int scale, int z_index, const FontData* font) {
-        g_queue.push_back({ x, y, z_index, TextData{ text, color, scale, font } });
+        const FontData* f = font ? font : &Font::DEFAULT_BLANK;
+        int sort_y = 0;
+        if (g_y_sort_mode == YSortMode::TopY) {
+            sort_y = y;
+        } else if (g_y_sort_mode == YSortMode::YPlusHeight) {
+            sort_y = y + f->size * scale;
+        }
+        g_queue.push_back({ x, y, z_index, sort_y, TextData{ text, color, scale, f } });
     }
 
     void rect(int x, int y, int width, int height, uint32_t color, bool fill, int z_index) {
-        g_queue.push_back({ x, y, z_index, RectData{ width, height, color, fill } });
+        int sort_y = 0;
+        if (g_y_sort_mode == YSortMode::TopY) {
+            sort_y = y;
+        } else if (g_y_sort_mode == YSortMode::YPlusHeight) {
+            sort_y = y + height;
+        }
+        g_queue.push_back({ x, y, z_index, sort_y, RectData{ width, height, color, fill } });
     }
 
     void sprite(int x, int y, const uint8_t* pixel_data, uint16_t pixel_data_size, int width, int height, int z_index) {
+        int sort_y = 0;
+        if (g_y_sort_mode == YSortMode::TopY) {
+            sort_y = y;
+        } else if (g_y_sort_mode == YSortMode::YPlusHeight) {
+            sort_y = y + height;
+        }
         g_queue.push_back({
-            x, y, z_index,
+            x, y, z_index, sort_y,
             SpriteData{ pixel_data, pixel_data_size, width, height, 0, 0, width, height }
         });
     }
@@ -192,8 +195,14 @@ namespace Draw {
         int src_x, int src_y, int src_w, int src_h,
         int z_index
     ) {
+        int sort_y = 0;
+        if (g_y_sort_mode == YSortMode::TopY) {
+            sort_y = screen_y;
+        } else if (g_y_sort_mode == YSortMode::YPlusHeight) {
+            sort_y = screen_y + src_h;
+        }
         g_queue.push_back({
-            screen_x, screen_y, z_index,
+            screen_x, screen_y, z_index, sort_y,
             SpriteData{ pixels, pixels_size, width, height, src_x, src_y, src_w, src_h }
         });
     }
@@ -204,14 +213,11 @@ namespace Draw {
         // Sort the commands
         // Primary key: Z-Index (lower draws first).
         // Secondary key: Y coordinate (Classic 2.5D top-to-bottom depth layering)
-        std::sort(g_queue.begin(), g_queue.end(), [](const Command& a, const Command& b) {
+        std::stable_sort(g_queue.begin(), g_queue.end(), [](const Command& a, const Command& b) {
             if (a.z_index != b.z_index) {
                 return a.z_index < b.z_index;
             }
-            if (g_y_sort_mode == YSortMode::None) {
-                return false; // Keep stable submission order
-            }
-            return get_sort_y(a, g_y_sort_mode) < get_sort_y(b, g_y_sort_mode);
+            return a.sort_y < b.sort_y;
         });
 
         // Dispatch drawing functions using pattern matching
