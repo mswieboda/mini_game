@@ -44,16 +44,12 @@ void frame_updates(GameWindow& window, FrameTime& frame_time, SceneManager& scen
 
 // --- DRAW --- where drawing happens
 void draw(GameWindow& window, FrameTime& frame_time, SceneManager& scene_manager, std::vector<uint32_t>& pixel_buffer) {
-    float alpha = frame_time.get_alpha();
-
     // TODO: we'll use alpha in the draw methods later
     // Use alpha to smoothly slide/interpolate visual coordinates
     // to exactly where they should be at this exact microsecond
+    // float alpha = frame_time.get_alpha();
     // scene_manager.draw(pixel_buffer, alpha);
 
-    // SceneManager::draw internally calls Draw::flush_pipeline with the scene's background_color.
-    // Do NOT call flush_pipeline again here — a second call would clear the buffer
-    // with an empty queue, erasing everything that was just drawn.
     scene_manager.draw(pixel_buffer);
 
     window.present(pixel_buffer);
