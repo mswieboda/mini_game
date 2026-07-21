@@ -121,8 +121,16 @@ void Scene::draw_entities(std::vector<uint32_t>& screen_buffer) {
 }
 
 size_t Scene::entity_index(const std::string& tag) const {
-    for (size_t i = 0; i < entities.size(); ++i) {
-        if (entities[i].tag == tag) return i;
+    if (m_tag_map_dirty || entities.size() != m_cached_entities_size) {
+        m_tag_to_index.clear();
+        for (size_t i = 0; i < entities.size(); ++i) {
+            if (!entities[i].tag.empty() && m_tag_to_index.find(entities[i].tag) == m_tag_to_index.end()) {
+                m_tag_to_index[entities[i].tag] = i;
+            }
+        }
+        m_cached_entities_size = entities.size();
+        m_tag_map_dirty = false;
     }
-    return SIZE_MAX;
+    auto it = m_tag_to_index.find(tag);
+    return (it != m_tag_to_index.end()) ? it->second : SIZE_MAX;
 }

@@ -3,7 +3,6 @@
 #include "Draw.h"
 #include "Font.h"
 #include "assets/Fonts.h"
-#include "assets/Images.h"
 #include "helpers.h"
 
 namespace Draw {
@@ -11,6 +10,7 @@ namespace Draw {
     namespace {
         std::vector<Command> g_queue;
         YSortMode g_y_sort_mode = YSortMode::TopY;
+        const uint32_t* g_palette = nullptr;
 
         int get_sort_y(const Command& cmd, YSortMode mode) {
             if (mode == YSortMode::None) return 0;
@@ -139,7 +139,7 @@ namespace Draw {
 
                         // Screen bounds check
                         if (tx >= 0 && tx < Game::WIDTH && ty >= 0 && ty < Game::HEIGHT) {
-                            uint32_t color = Assets::Images::GLOBAL_PALETTE[pal_idx];
+                            uint32_t color = g_palette ? g_palette[pal_idx] : 0xFF00FF00;
 
                             // Alpha check & Blending
                             if ((color & 0xFF000000) != 0x00000000) {
@@ -159,6 +159,10 @@ namespace Draw {
 
     YSortMode get_y_sort_mode() {
         return g_y_sort_mode;
+    }
+
+    void set_palette(const uint32_t* palette) {
+        g_palette = palette;
     }
 
     void text(int x, int y, const std::string& text, uint32_t color, int scale, int z_index, const FontData* font) {

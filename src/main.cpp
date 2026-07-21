@@ -6,6 +6,8 @@
 #include "core/Input.h"
 #include "core/SceneManager.h"
 #include "core/Log.h"
+#include "core/Draw.h"
+#include "assets/Images.h"
 #include "MainScene.h"
 
 // --- UPDATE --- where game logic updates happens
@@ -66,6 +68,8 @@ int main() {
     if (!Audio::init()) {
         Log::error("Continuing without audio.");
     }
+
+    Draw::set_palette(Assets::Images::GLOBAL_PALETTE);
 
     // Setup input routing
     mfb_set_keyboard_callback(game_window.raw(), Input::keyboard_callback);

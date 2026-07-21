@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <unordered_map>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -11,6 +12,9 @@ class SceneManager; // Forward declaration
 class Scene {
 protected:
     std::vector<Entity> entities; // Common entity storage for any scene
+    mutable std::unordered_map<std::string, size_t> m_tag_to_index;
+    mutable size_t m_cached_entities_size = 0;
+    mutable bool m_tag_map_dirty = true;
 
 public:
     uint32_t background_color = 0xFF000000;
