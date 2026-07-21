@@ -83,7 +83,7 @@ clean:
 
 clean-assets:
 	@echo "--- Cleaning Asset Stamps ---"
-	@rm -rf $(STAMP_DIR)/.*.stamp
+	@rm -f $(FONT_STAMP) $(IMAGE_STAMP) $(MUSIC_STAMP)
 
 # --- RELEASE SHORTCUTS ---
 build-release:
